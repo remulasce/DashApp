@@ -41,4 +41,8 @@ class DashRepository @ExperimentalCoroutinesApi
     fun liveCarState() : LiveCarState {
         return getCANService().liveCarState();
     }
+
+    fun carStateTimestamp() : CarStateTimestamp {
+        return getCANService().carStateTimestamp()
+    }
 }

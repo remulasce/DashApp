@@ -4,11 +4,20 @@ import android.util.Log
 import androidx.lifecycle.MutableLiveData
 
 typealias CarState = MutableMap<String, Float?>
+// If present, the time at which the CarState was last set (System.currentTimeMillis(){
+typealias CarStateTimestamp = MutableMap<String, Long?>
 
-fun createCarState(carData: MutableMap<String, Float> = mutableMapOf()): CarState {
+fun createCarState(carData: MutableMap<String, Float?> = mutableMapOf()): CarState {
     return HashMap(carData)
 }
 
+fun createCarStateTimestamp(carData: MutableMap<String, Long?> = mutableMapOf()): CarStateTimestamp {
+    return HashMap(carData)
+}
+
+
+// I probably shouldn't have done this migration. It's pretty much guaranteed the SignalState
+// timestamp is, like, just now.
 typealias LiveCarState = Map<String, MutableLiveData<SignalState?>>
 
 fun createLiveCarState(): LiveCarState {

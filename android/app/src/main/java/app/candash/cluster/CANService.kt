@@ -9,6 +9,7 @@ interface CANService {
     suspend fun shutdown()
     fun clearCarState()
     fun carState() : CarState
+    fun carStateTimestamp() : CarStateTimestamp
     fun liveCarState() : LiveCarState
     fun isRunning() : Boolean
     fun getType() : CANServiceType

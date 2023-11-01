@@ -21,6 +21,7 @@ class PandaService(val sharedPreferences: SharedPreferences, val context: Contex
     @ExperimentalCoroutinesApi
     private var flipBus = false
     private val carState = createCarState()
+    private val carStateTimestamp = createCarStateTimestamp()
     private val liveCarState: LiveCarState = createLiveCarState()
     private var clearRequest = false
     private val port = 1338
@@ -28,7 +29,7 @@ class PandaService(val sharedPreferences: SharedPreferences, val context: Contex
     private var inShutdown = false
     private val heartbeat = "ehllo"
     private val goodbye = "bye"
-    private val loopMinInterval = 500
+    private val loopMinInterval = 10
     private var lastHeartbeatTimestamp = 0L
     private val heartBeatIntervalMs = 4_000
     private val socketTimeoutMs = 1_000
@@ -49,6 +50,10 @@ class PandaService(val sharedPreferences: SharedPreferences, val context: Contex
 
     override fun carState(): CarState {
         return carState
+    }
+
+    override fun carStateTimestamp(): CarStateTimestamp {
+        return carStateTimestamp
     }
 
     override fun liveCarState(): LiveCarState {
@@ -126,6 +131,7 @@ class PandaService(val sharedPreferences: SharedPreferences, val context: Contex
                     try {
                         getSocket().receive(packet)
                         if (!pandaConnected) {
+                            Log.w(TAG, "Panda not connected; clearing signals")
                             recentSignalsReceived.clear()
                             lastReceivedCheckTimestamp = System.currentTimeMillis()
                             pandaConnected = true
@@ -156,6 +162,11 @@ class PandaService(val sharedPreferences: SharedPreferences, val context: Contex
                         if (newPandaFrame.frameId == 0L) {
                             break
                         } else if (newPandaFrame.frameId == 6L && newPandaFrame.busId == 15L) {
+                            Log.v(TAG, "Received ack")
+                            // Post acks unconditionally to show we're connected to the server
+                            carState[SName.canServerAck] = 1f
+                            carStateTimestamp[SName.canServerAck] = System.currentTimeMillis()
+                            liveCarState[SName.canServerAck]!!.postValue(SignalState(1f, System.currentTimeMillis()))
                             // It's an ack
                             sendFilter(getSocket(), signalsToRequest)
                         } else {
@@ -233,6 +244,7 @@ class PandaService(val sharedPreferences: SharedPreferences, val context: Contex
         Log.v(TAG, "Received signals: ${signalHelper.getSignalsForFrame(busId, frame.frameIdHex)}")
         signalHelper.getSignalsForFrame(busId, frame.frameIdHex).forEach { signal ->
             val sigVal = frame.getCANValue(signal)
+            carStateTimestamp[signal.name] = System.currentTimeMillis()
             // Only send the value if it changed from last time
             if (sigVal != null && sigVal != carState[signal.name]) {
                 carState[signal.name] = sigVal
@@ -256,6 +268,7 @@ class PandaService(val sharedPreferences: SharedPreferences, val context: Contex
             val value = it.second(carState)
             if (value != null && value != carState[it.first]) {
                 carState[it.first] = value
+                carStateTimestamp[it.first] = System.currentTimeMillis()
                 liveCarState[it.first]!!.postValue(
                     SignalState(value, System.currentTimeMillis())
                 )

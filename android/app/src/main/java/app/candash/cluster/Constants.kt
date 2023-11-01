@@ -4,6 +4,7 @@ object Constants {
     // PandaService may flip these automatically
     const val chassisBus = 0
     const val vehicleBus = 1
+    const val canServerBus = 15 // Internal CANServer debug messages and stats
     const val anyBus = -1
 
     const val ipAddressPrefKey = "ip_address_pref_key"

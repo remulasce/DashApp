@@ -605,16 +605,29 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <ImageView
-        android:id="@+id/battery"
-        android:layout_width="50dp"
+        android:id="@+id/canserver_connection"
+        android:layout_width="25dp"
         android:layout_height="25dp"
         android:layout_marginTop="16.5dp"
         android:gravity="center|center"
         android:paddingTop="0dp"
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="20dp"
-        android:src="@drawable/ic_deadbattery"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:src="@drawable/icons8_disconnected_24___"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        />
+
+    <ImageView
+        android:id="@+id/battery"
+        android:layout_width="50dp"
+        android:layout_height="25dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:gravity="center|center"
+        android:paddingTop="0dp"
+        android:src="@drawable/ic_deadbattery"
+        app:layout_constraintEnd_toStartOf="@id/canserver_connection"
         app:layout_constraintTop_toTopOf="parent" />
 
     <app.candash.cluster.BatteryGauge

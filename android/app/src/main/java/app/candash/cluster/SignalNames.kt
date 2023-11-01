@@ -97,6 +97,9 @@ object SName {
     const val smoothBattAmps = "smoothBattAmps"
     const val l1Distance = "l1Distance"
     const val l2Distance = "l2Distance"
+
+    // CANServer debug signals:
+    const val canServerAck = "CANServer_Ehllo_Ack"
 }
 
 object SGroup {

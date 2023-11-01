@@ -12,6 +12,7 @@ class MockCANService : CANService {
     private var shutdown = false
     private var count: AtomicInteger = AtomicInteger(0)
     private val carState = createCarState()
+    private val carStateTimestamp = createCarStateTimestamp()
     private val liveCarState = createLiveCarState()
     private var clearRequest = false
 
@@ -60,6 +61,10 @@ class MockCANService : CANService {
 
     override fun carState(): CarState {
         return carState
+    }
+
+    override fun carStateTimestamp(): CarStateTimestamp {
+        return carStateTimestamp
     }
 
     override fun liveCarState(): LiveCarState {

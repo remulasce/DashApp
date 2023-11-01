@@ -18,7 +18,8 @@ import javax.inject.Inject
 class DashViewModel @Inject constructor(private val dashRepository: DashRepository, private val sharedPreferences: SharedPreferences, @ApplicationContext context: Context) : ViewModel() {
     private val TAG = DashViewModel::class.java.simpleName
 
-    var carState = dashRepository.carState()
+    var carState: CarState = dashRepository.carState()
+    var carStateTimestamp = dashRepository.carStateTimestamp()
     private var liveCarState = dashRepository.liveCarState()
     private var viewToShowData: MutableLiveData<String> = MutableLiveData()
     private var nsdManager = (context.getSystemService(Context.NSD_SERVICE) as NsdManager?)!!
@@ -102,6 +103,22 @@ class DashViewModel @Inject constructor(private val dashRepository: DashReposito
      */
     fun onSignal(owner: LifecycleOwner, signal: String, onChanged: (value: Float?) -> Unit) {
         liveCarState[signal]!!.observe(owner) { onChanged(it?.value) }
+    }
+
+    /**
+     * This observes a single CAN signal, running the provided unit when the signal value or
+     * timestamp changes.
+     *
+     * Inclusion of the timestamp allows staleness-based UI, eg. grey out the signal when it hasn't
+     * been received in a while, but then change the color once it comes in again.
+     *
+     * @param owner Provide the view's lifecycle owner
+     * @param signal The signal name from `SName` to watch for changes
+     * @param onChanged The unit to execute when the signal value changes. The value of the observed
+     * signal is provided to the unit.
+     */
+    fun onSignalOrTimestamp(owner: LifecycleOwner, signal: String, onChanged: (value: SignalState?) -> Unit) {
+        liveCarState[signal]!!.observe(owner) { onChanged(it) }
     }
 
     /**

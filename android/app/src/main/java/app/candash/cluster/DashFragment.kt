@@ -25,7 +25,10 @@ import androidx.core.animation.doOnEnd
 import androidx.core.view.setMargins
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import app.candash.cluster.databinding.FragmentDashBinding
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.pow
@@ -104,6 +107,7 @@ class DashFragment : Fragment() {
      */
     private fun viewsToSetGone(): Set<View> =
         setOf(
+            binding.canserverConnection,
             binding.telltaleDrl,
             binding.telltaleLb,
             binding.telltaleHb,
@@ -128,6 +132,7 @@ class DashFragment : Fragment() {
     private fun topUIViews(): Set<View> =
         setOf(
             binding.PRND,
+            binding.canserverConnection,
             binding.batterypercent,
             binding.battery,
             binding.batteryOverlay,
@@ -139,7 +144,6 @@ class DashFragment : Fragment() {
             binding.speed,
             binding.unit
         )
-
 
 
     /**
@@ -352,9 +356,13 @@ class DashFragment : Fragment() {
             return@setOnLongClickListener true
         }
         binding.batterypercent.setOnClickListener {
-            prefs.setBooleanPref(Constants.showBattRange, !prefs.getBooleanPref(Constants.showBattRange))
+            prefs.setBooleanPref(
+                Constants.showBattRange,
+                !prefs.getBooleanPref(Constants.showBattRange)
+            )
             processBattery()
-            binding.infoToast.text = if (prefs.getBooleanPref(Constants.showBattRange)) "Showing battery range" else "Showing battery SOC"
+            binding.infoToast.text =
+                if (prefs.getBooleanPref(Constants.showBattRange)) "Showing battery range" else "Showing battery SOC"
             binding.infoToast.visible = true
             binding.infoToast.startAnimation(fadeOut(5000))
         }
@@ -389,16 +397,21 @@ class DashFragment : Fragment() {
         binding.PRND.setOnLongClickListener {
             prefs.setBooleanPref(Constants.forceRHD, !prefs.getBooleanPref(Constants.forceRHD))
             setLayoutOrder()
-            binding.infoToast.text = if (prefs.getBooleanPref(Constants.forceRHD)) "Force right-hand drive" else "Auto right-hand drive"
+            binding.infoToast.text =
+                if (prefs.getBooleanPref(Constants.forceRHD)) "Force right-hand drive" else "Auto right-hand drive"
             binding.infoToast.visible = true
             binding.infoToast.startAnimation(fadeOut(5000))
             return@setOnLongClickListener true
         }
 
         binding.speed.setOnLongClickListener {
-            prefs.setBooleanPref(Constants.forceNightMode, !prefs.getBooleanPref(Constants.forceNightMode))
+            prefs.setBooleanPref(
+                Constants.forceNightMode,
+                !prefs.getBooleanPref(Constants.forceNightMode)
+            )
             setColors()
-            binding.infoToast.text = if (prefs.getBooleanPref(Constants.forceNightMode)) "Force dark mode" else "Auto dark mode"
+            binding.infoToast.text =
+                if (prefs.getBooleanPref(Constants.forceNightMode)) "Force dark mode" else "Auto dark mode"
             binding.infoToast.visible = true
             binding.infoToast.startAnimation(fadeOut(5000))
             return@setOnLongClickListener true
@@ -407,7 +420,7 @@ class DashFragment : Fragment() {
         binding.blackout.setOnClickListener {
             // wake screen on tap, then eventually sleep again
             binding.blackout.visible = false
-            view.postDelayed({updateBlackout()}, Constants.blackoutOverrideSeconds * 1000L)
+            view.postDelayed({ updateBlackout() }, Constants.blackoutOverrideSeconds * 1000L)
         }
 
         val efficiencyCalculator = EfficiencyCalculator(viewModel, prefs)
@@ -433,7 +446,7 @@ class DashFragment : Fragment() {
                     for (topUIView in topUIViews()) {
                         val params = topUIView.layoutParams as ConstraintLayout.LayoutParams
                         val savedParams = savedLayoutParams[topUIView]
-                        if (topUIView.equals(binding.speed)){
+                        if (topUIView.equals(binding.speed)) {
                             params.setMargins(
                                 savedParams!!.leftMargin,
                                 savedParams.topMargin - 30.px,
@@ -441,7 +454,7 @@ class DashFragment : Fragment() {
                                 savedParams.bottomMargin + 30.px
                             )
 
-                        }else {
+                        } else {
                             params.setMargins(
                                 savedParams!!.leftMargin,
                                 savedParams.topMargin - 30.px,
@@ -449,7 +462,7 @@ class DashFragment : Fragment() {
                                 savedParams.bottomMargin
                             )
                         }
-                      if (topUIView.equals(binding.unit)) {
+                        if (topUIView.equals(binding.unit)) {
                             params.circleRadius = savedParams.circleRadius - 30
                         }
                         topUIView.layoutParams = params
@@ -482,6 +495,19 @@ class DashFragment : Fragment() {
          * Use one of viewModel.onSignal or onSomeSignals
          * Remember that it will only run when the value of the signal(s) change
          */
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            while (true) {
+                viewModel.carStateTimestamp[SName.canServerAck]?.let {
+                    if (System.currentTimeMillis() - it < 5000) {
+                        binding.canserverConnection.setImageResource(R.drawable.icons8_connected_24___)
+                    } else {
+                        binding.canserverConnection.setImageResource(R.drawable.icons8_disconnected_24___)
+                    }
+                }
+                delay(100)
+            }
+        }
 
         viewModel.onSignal(viewLifecycleOwner, SName.keepClimateReq) {
             if (it == SVal.keepClimateParty) {
@@ -567,7 +593,10 @@ class DashFragment : Fragment() {
             }
         }
 
-        viewModel.onSomeSignals(viewLifecycleOwner, listOf(SName.gearSelected, SName.autopilotState)) {
+        viewModel.onSomeSignals(
+            viewLifecycleOwner,
+            listOf(SName.gearSelected, SName.autopilotState)
+        ) {
             updateGearView()
         }
 
@@ -576,7 +605,8 @@ class DashFragment : Fragment() {
             val fr = it[SName.brakeTempFR]
             if (fl != null && fr != null) {
                 val frontBrakeTemp = max(fl, fr)
-                binding.frontbraketemp.text = frontBrakeTemp.convertAndRoundToString(Units.TEMPERATURE_C, 0)
+                binding.frontbraketemp.text =
+                    frontBrakeTemp.convertAndRoundToString(Units.TEMPERATURE_C, 0)
                 binding.frontbraketempgauge.setGauge(frontBrakeTemp / 984f)
             } else {
                 binding.frontbraketemp.text = ""
@@ -589,7 +619,8 @@ class DashFragment : Fragment() {
             val rr = it[SName.brakeTempRR]
             if (rl != null && rr != null) {
                 val rearBrakeTemp = max(rl, rr)
-                binding.rearbraketemp.text = rearBrakeTemp.convertAndRoundToString(Units.TEMPERATURE_C, 0)
+                binding.rearbraketemp.text =
+                    rearBrakeTemp.convertAndRoundToString(Units.TEMPERATURE_C, 0)
                 binding.rearbraketempgauge.setGauge(rearBrakeTemp / 984f)
             } else {
                 binding.rearbraketemp.text = ""
@@ -633,7 +664,8 @@ class DashFragment : Fragment() {
                 if (viewModel.carState[SName.gearSelected] == SVal.gearReverse) {
                     frontTorqueVal = -(frontTorqueVal)
                 }
-                binding.fronttorque.text = frontTorqueVal.convertAndRoundToString(Units.TORQUE_NM, 0)
+                binding.fronttorque.text =
+                    frontTorqueVal.convertAndRoundToString(Units.TORQUE_NM, 0)
                 if (prefs.getPref("frontTorqueMax") < abs(frontTorqueVal)) {
                     prefs.setPref("frontTorqueMax", abs(frontTorqueVal))
                 }
@@ -675,11 +707,17 @@ class DashFragment : Fragment() {
             updateAPWarning(it ?: 0f)
         }
 
-        viewModel.onSomeSignals(viewLifecycleOwner, listOf(SName.uiRange, SName.stateOfCharge, SName.chargeStatus)) { processBattery() }
+        viewModel.onSomeSignals(
+            viewLifecycleOwner,
+            listOf(SName.uiRange, SName.stateOfCharge, SName.chargeStatus)
+        ) { processBattery() }
 
         viewModel.onSomeSignals(viewLifecycleOwner, SGroup.closures) { updateDoorStateUI() }
 
-        viewModel.onSomeSignals(viewLifecycleOwner, listOf(SName.autopilotState, SName.gearSelected, SName.brakeApplied)) {
+        viewModel.onSomeSignals(
+            viewLifecycleOwner,
+            listOf(SName.autopilotState, SName.gearSelected, SName.brakeApplied)
+        ) {
             updateAutopilotUI()
         }
 
@@ -687,11 +725,17 @@ class DashFragment : Fragment() {
             updateAutopilotRotation()
         }
 
-        viewModel.onSomeSignals(viewLifecycleOwner, listOf(SName.accState, SName.accActive, SName.gearSelected, SName.brakeApplied)) {
+        viewModel.onSomeSignals(
+            viewLifecycleOwner,
+            listOf(SName.accState, SName.accActive, SName.gearSelected, SName.brakeApplied)
+        ) {
             updateTaccUI()
         }
 
-        viewModel.onSomeSignals(viewLifecycleOwner, listOf(SName.gearSelected, SName.fusedSpeedLimit, SName.mapRegion)) {
+        viewModel.onSomeSignals(
+            viewLifecycleOwner,
+            listOf(SName.gearSelected, SName.fusedSpeedLimit, SName.mapRegion)
+        ) {
             updateSpeedLimitSign()
         }
 
@@ -721,7 +765,10 @@ class DashFragment : Fragment() {
             processLightTellTales()
         }
 
-        viewModel.onSomeSignals(viewLifecycleOwner, listOf(SName.gearSelected, SName.driverUnbuckled, SName.passengerUnbuckled)) {
+        viewModel.onSomeSignals(
+            viewLifecycleOwner,
+            listOf(SName.gearSelected, SName.driverUnbuckled, SName.passengerUnbuckled)
+        ) {
             binding.telltaleSeatbelt.visible = gearState() != SVal.gearInvalid &&
                     ((it[SName.driverUnbuckled] == 1f) or
                             (it[SName.passengerUnbuckled] == 1f))
@@ -747,7 +794,11 @@ class DashFragment : Fragment() {
         // Power is always changing, it's enough to only observe this for rapid updates to the efficiency view
         viewModel.onSignal(viewLifecycleOwner, SName.power) {
             val efficiencyText = efficiencyCalculator.getEfficiencyText()
-            if (efficiencyText == null || gearState() in setOf(SVal.gearInvalid, SVal.gearPark) || prefs.getBooleanPref(Constants.hideEfficiency) || isSplitScreen()) {
+            if (efficiencyText == null || gearState() in setOf(
+                    SVal.gearInvalid,
+                    SVal.gearPark
+                ) || prefs.getBooleanPref(Constants.hideEfficiency) || isSplitScreen()
+            ) {
                 binding.efficiency.visible = false
             } else {
                 binding.efficiency.text = efficiencyText
@@ -777,7 +828,10 @@ class DashFragment : Fragment() {
             val distance = it ?: 99999f
             val l1Distance = viewModel.carState[SName.l1Distance] ?: Constants.l1DistanceLowSpeed
             val l2Distance = viewModel.carState[SName.l2Distance] ?: Constants.l2DistanceLowSpeed
-            if (gearState() in setOf(SVal.gearPark, SVal.gearInvalid) || prefs.getBooleanPref(Constants.hideBs)) {
+            if (gearState() in setOf(SVal.gearPark, SVal.gearInvalid) || prefs.getBooleanPref(
+                    Constants.hideBs
+                )
+            ) {
                 binding.blindSpotLeft1.visible = false
                 binding.blindSpotLeft2.visible = false
             } else {
@@ -790,7 +844,10 @@ class DashFragment : Fragment() {
             val distance = it ?: 99999f
             val l1Distance = viewModel.carState[SName.l1Distance] ?: Constants.l1DistanceLowSpeed
             val l2Distance = viewModel.carState[SName.l2Distance] ?: Constants.l2DistanceLowSpeed
-            if (gearState() in setOf(SVal.gearPark, SVal.gearInvalid) || prefs.getBooleanPref(Constants.hideBs)) {
+            if (gearState() in setOf(SVal.gearPark, SVal.gearInvalid) || prefs.getBooleanPref(
+                    Constants.hideBs
+                )
+            ) {
                 binding.blindSpotRight1.visible = false
                 binding.blindSpotRight2.visible = false
             } else {
@@ -803,11 +860,12 @@ class DashFragment : Fragment() {
             if (it[SName.PINenabled] == 1f) {
                 if (it[SName.PINpassed] == 0f &&
                     !binding.PINWarning.visible &&
-                    it[SName.brakeApplied] == 2f) {
+                    it[SName.brakeApplied] == 2f
+                ) {
                     binding.PINWarning.clearAnimation()
                     binding.PINWarning.startAnimation(fadeIn())
                     binding.PINWarning.visible = true
-                } else if(it[SName.PINpassed] == 1f) {
+                } else if (it[SName.PINpassed] == 1f) {
                     binding.PINWarning.clearAnimation()
                     if (binding.PINWarning.visible) {
                         binding.PINWarning.startAnimation(fadeOut())
@@ -903,7 +961,8 @@ class DashFragment : Fragment() {
             binding.battHeat,
             binding.battCharge,
             binding.batterypercent,
-            binding.battery
+            binding.battery,
+            binding.canserverConnection
         )
         val doors = listOf(binding.modely, null)
         setHorizontalConstraints(topBar, reverse)
@@ -924,7 +983,11 @@ class DashFragment : Fragment() {
      */
     private fun setHorizontalConstraints(views: List<View?>, reverse: Boolean = false) {
         var afterBreak = false
-        val viewsList = if (reverse) {views.reversed()} else {views}
+        val viewsList = if (reverse) {
+            views.reversed()
+        } else {
+            views
+        }
         for (i in viewsList.indices) {
             val view = viewsList[i]
             if (view == null) {
@@ -1006,7 +1069,8 @@ class DashFragment : Fragment() {
 
     private fun updateLowBeam() {
         // Low beam only shows when high beam is off
-        binding.telltaleLb.visible = (viewModel.carState[SName.lightingState] == SVal.lightsOn && viewModel.carState[SName.highBeamStatus] == 0f)
+        binding.telltaleLb.visible =
+            (viewModel.carState[SName.lightingState] == SVal.lightsOn && viewModel.carState[SName.highBeamStatus] == 0f)
     }
 
     private fun updateHighBeam() {
@@ -1033,7 +1097,7 @@ class DashFragment : Fragment() {
     private fun gearState(): Float {
         return viewModel.carState[SName.gearSelected] ?: SVal.gearInvalid
     }
-    
+
     private fun updateGearView() {
         val apState = viewModel.carState[SName.autopilotState] ?: 0f
         val gearColorSelected = when {
@@ -1086,7 +1150,7 @@ class DashFragment : Fragment() {
             binding.blackout.visible = false
         }
     }
-    
+
     private fun shouldUseDarkMode(): Boolean {
         // Save/use the last known value to prevent a light/dark flash upon launching
         val sunUp = viewModel.carState[SName.isSunUp]
@@ -1145,7 +1209,7 @@ class DashFragment : Fragment() {
             binding.coolantflowunits,
             binding.chargerate,
             binding.batterypercent,
-            )
+        )
         val textViewsSecondary = setOf(
             binding.unit
         )
@@ -1170,6 +1234,7 @@ class DashFragment : Fragment() {
             binding.powerBar.setDayValue(0)
             binding.battery.setColorFilter(Color.DKGRAY)
             binding.batteryOverlay.setDayValue(0)
+            binding.canserverConnection.setColorFilter(Color.WHITE)
         } else {
             window?.statusBarColor = Color.parseColor("#FFEEEEEE")
             binding.root.setBackgroundColor(requireContext().getColor(R.color.day_background))
@@ -1180,6 +1245,8 @@ class DashFragment : Fragment() {
             circleGauges.forEach { it.setDayValue(1) }
             binding.powerBar.setDayValue(1)
             binding.battery.setColorFilter(Color.parseColor("#FFAAAAAA"))
+            binding.canserverConnection.setColorFilter(Color.DKGRAY)
+
             binding.batteryOverlay.setDayValue(1)
         }
         updateGearView()
@@ -1233,7 +1300,8 @@ class DashFragment : Fragment() {
     private fun updateAutopilotUI() {
         val brakeApplied = (viewModel.carState[SName.brakeApplied] == 2f)
         val inDrive = (viewModel.carState[SName.gearSelected] == SVal.gearDrive)
-        val autopilotState = if (brakeApplied || !inDrive) 0f else viewModel.carState[SName.autopilotState] ?: 0f
+        val autopilotState =
+            if (brakeApplied || !inDrive) 0f else viewModel.carState[SName.autopilotState] ?: 0f
 
         when (autopilotState) {
             in 3f..7f -> binding.autopilot.setImageResource(R.drawable.ic_autopilot)
@@ -1245,6 +1313,7 @@ class DashFragment : Fragment() {
                 binding.autopilot.startAnimation(fadeIn(200))
                 binding.autopilot.visible = true
             }
+
             autopilotState !in 2f..7f && binding.autopilot.visible -> {
                 binding.autopilot.startAnimation(fadeOut(200))
                 binding.autopilot.visible = false
@@ -1261,7 +1330,7 @@ class DashFragment : Fragment() {
         binding.autopilot.rotation = steeringAngle
     }
 
-    private fun updateTaccUI(){
+    private fun updateTaccUI() {
         if (viewModel.carState[SName.accActive] == 1f) {
             binding.TACC.setImageResource(R.drawable.ic_tacc)
         } else {
@@ -1278,6 +1347,7 @@ class DashFragment : Fragment() {
                     binding.TACC.startAnimation(fadeIn(200))
                     binding.TACC.visible = true
                 }
+
                 false -> {
                     binding.TACC.startAnimation(fadeOut(200))
                     binding.TACC.visible = false
@@ -1469,6 +1539,7 @@ class DashFragment : Fragment() {
             viewModel.startDiscoveryService()
         }, 2000)
     }
+
     override fun onDestroy() {
         viewModel.stopDiscoveryService()
         super.onDestroy()

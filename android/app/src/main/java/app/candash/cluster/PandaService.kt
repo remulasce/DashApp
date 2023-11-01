@@ -21,13 +21,14 @@ class PandaService(val sharedPreferences: SharedPreferences, val context: Contex
     @ExperimentalCoroutinesApi
     private var flipBus = false
     private val carState = createCarState()
-    private val liveCarState = createLiveCarState()
+    private val liveCarState: LiveCarState = createLiveCarState()
     private var clearRequest = false
     private val port = 1338
     private var shutdown = false
     private var inShutdown = false
     private val heartbeat = "ehllo"
     private val goodbye = "bye"
+    private val loopMinInterval = 500
     private var lastHeartbeatTimestamp = 0L
     private val heartBeatIntervalMs = 4_000
     private val socketTimeoutMs = 1_000
@@ -37,7 +38,7 @@ class PandaService(val sharedPreferences: SharedPreferences, val context: Contex
     private var signalsToRequest: List<String> = arrayListOf()
     private var recentSignalsReceived: MutableSet<String> = mutableSetOf()
     private var lastReceivedCheckTimestamp = 0L
-    private val signalsReceivedCheckIntervalMs = 5_000
+    private val signalsReceivedCheckIntervalMs = 10_000
     private lateinit var socket: DatagramSocket
     private var pandaConnected = false
 
@@ -70,7 +71,7 @@ class PandaService(val sharedPreferences: SharedPreferences, val context: Contex
         return socket
     }
 
-    override fun isRunning() : Boolean {
+    override fun isRunning(): Boolean {
         return !shutdown
     }
 
@@ -96,13 +97,15 @@ class PandaService(val sharedPreferences: SharedPreferences, val context: Contex
                         Log.d(TAG, "Sending heartbeat on thread: ${Thread.currentThread().name}")
                         sendHello(getSocket())
                     }
+
                     // Warning for missing signals
                     if (pandaConnected && now > lastReceivedCheckTimestamp + signalsReceivedCheckIntervalMs) {
-                        val deltaSeconds = ((now-lastReceivedCheckTimestamp) / 1000).toInt()
-                        for (name in signalHelper.getAllCANSignalNames()){
-                            if (!recentSignalsReceived.contains(name)){
+                        val deltaSeconds = ((now - lastReceivedCheckTimestamp) / 1000).toInt()
+                        for (name in signalHelper.getAllCANSignalNames()) {
+                            if (!recentSignalsReceived.contains(name)) {
                                 Log.w(
-                                    TAG,"Did not receive signal '$name' in the last $deltaSeconds seconds"
+                                    TAG,
+                                    "Did not receive signal '$name' in the last $deltaSeconds seconds"
                                 )
                                 if (carState[name] != null) {
                                     carState[name] = null
@@ -146,11 +149,11 @@ class PandaService(val sharedPreferences: SharedPreferences, val context: Contex
                     }
 
                     //Log.d(TAG, "Packet from: " + packet.address + ":" + packet.port)
-                    for (i in buf.indices step 16){
+                    for (i in buf.indices step 16) {
 
-                        val newPandaFrame = NewPandaFrame(buf.sliceArray(i..i+15))
+                        val newPandaFrame = NewPandaFrame(buf.sliceArray(i..i + 15))
                         // Log.d(TAG, "bufindex = " + i.toString()+ " pandaFrame :" + newPandaFrame.frameId.toString())
-                        if (newPandaFrame.frameId == 0L){
+                        if (newPandaFrame.frameId == 0L) {
                             break
                         } else if (newPandaFrame.frameId == 6L && newPandaFrame.busId == 15L) {
                             // It's an ack
@@ -174,6 +177,11 @@ class PandaService(val sharedPreferences: SharedPreferences, val context: Contex
                         liveCarState.clear()
                         clearRequest = false
                     }
+                    // Don't try to run this loop infinitely quickly.
+                    val delay = loopMinInterval - (System.currentTimeMillis() - now)
+                    Log.v(TAG, "delay before next run: $delay ms")
+                    delay(delay)
+                    Log.v(TAG, "Finished delay")
                 }
                 pandaConnected = false
                 sendBye(getSocket())
@@ -197,14 +205,14 @@ class PandaService(val sharedPreferences: SharedPreferences, val context: Contex
     private fun handleFrame(frame: NewPandaFrame) {
         // 0x399 is a different length on each bus, so we use it to auto-detect the buses
         // Length of 3 only on vehicle bus
-        if (frame.frameIdHex == Hex(0x399) && (frame.frameLength == 3L)){
-            if (frame.busId.toInt() == Constants.vehicleBus && flipBus){
+        if (frame.frameIdHex == Hex(0x399) && (frame.frameLength == 3L)) {
+            if (frame.busId.toInt() == Constants.vehicleBus && flipBus) {
                 // chassis bus = 0, vehicle bus = 1, don't flip
                 Log.i(TAG, "chassis bus = 0, vehicle bus = 1; un-flipping bus IDs")
                 flipBus = false
                 sendFilter(getSocket(), signalsToRequest)
                 return
-            }else if (frame.busId.toInt() == Constants.chassisBus && !flipBus){
+            } else if (frame.busId.toInt() == Constants.chassisBus && !flipBus) {
                 // chassis bus = 1, vehicle bus = 0, should flip
                 Log.i(TAG, "chassis bus = 1, vehicle bus = 0; flipping bus IDs")
                 flipBus = true
@@ -222,12 +230,18 @@ class PandaService(val sharedPreferences: SharedPreferences, val context: Contex
             }
         }
 
+        Log.v(TAG, "Received signals: ${signalHelper.getSignalsForFrame(busId, frame.frameIdHex)}")
         signalHelper.getSignalsForFrame(busId, frame.frameIdHex).forEach { signal ->
             val sigVal = frame.getCANValue(signal)
             // Only send the value if it changed from last time
-            if (sigVal != null && sigVal != carState[signal.name]){
+            if (sigVal != null && sigVal != carState[signal.name]) {
                 carState[signal.name] = sigVal
-                liveCarState[signal.name]!!.postValue(sigVal)
+                liveCarState[signal.name]!!.postValue(
+                    SignalState(
+                        sigVal,
+                        System.currentTimeMillis()
+                    )
+                )
             }
             if (sigVal != null) {
                 recentSignalsReceived.add(signal.name)
@@ -242,7 +256,9 @@ class PandaService(val sharedPreferences: SharedPreferences, val context: Contex
             val value = it.second(carState)
             if (value != null && value != carState[it.first]) {
                 carState[it.first] = value
-                liveCarState[it.first]!!.postValue(value)
+                liveCarState[it.first]!!.postValue(
+                    SignalState(value, System.currentTimeMillis())
+                )
                 // Recursively calculate deeper augments:
                 calculateAugments(it.first)
             }

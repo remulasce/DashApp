@@ -274,6 +274,8 @@ class PartyFragment : Fragment() {
     }
 
     private fun updateBlackout() {
+        // FIXME: Disable for now.
+        return
         // the displayOn signal is always true in party mode, so instead we look at doors and butts
         if (!prefs.getBooleanPref(Constants.blankDisplaySync)
             && !anyDoorOpen()

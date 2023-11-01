@@ -43,11 +43,11 @@ class CircularGauge @JvmOverloads constructor(
 
 
 
-    override fun onDraw(canvas: Canvas?) {
+    override fun onDraw(canvas: Canvas) {
         val width = canvas!!.width
         val height = canvas!!.height
         val radius = Math.max(width, height)/2
-        Log.d(TAG, "width $width height $height")
+//        Log.d(TAG, "width $width height $height")
 
         var rect  = RectF(0f.px, height.toFloat(), width.toFloat(), 0f.px)
         super.onDraw(canvas)

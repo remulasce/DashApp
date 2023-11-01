@@ -24,7 +24,7 @@ class MockCANService : CANService {
                 liveCarState.clear()
                 for (state in newState) {
                     carState[state.key] = state.value
-                    liveCarState[state.key]!!.postValue(state.value)
+                    liveCarState[state.key]!!.postValue(SignalState(state.value!!, System.currentTimeMillis()))
                 }
                 Thread.sleep(MS_BETWEEN_REQUESTS)
                 yield()

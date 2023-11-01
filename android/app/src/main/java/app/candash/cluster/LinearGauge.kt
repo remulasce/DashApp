@@ -42,7 +42,7 @@ class LinearGauge @JvmOverloads constructor(
 
 
 
-    override fun onDraw(canvas: Canvas?) {
+    override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         screenWidth = getRealScreenWidth()
         // check if split screen
@@ -77,7 +77,7 @@ class LinearGauge @JvmOverloads constructor(
         percentWidth = percent
 
         renderWidth = (screenWidth - 100f)/2f * (percent.absoluteValue)
-        Log.d(TAG, "percentWidth $screenWidth RenderWidth $renderWidth")
+//        Log.d(TAG, "percentWidth $screenWidth RenderWidth $renderWidth")
 
         this.invalidate()
     }

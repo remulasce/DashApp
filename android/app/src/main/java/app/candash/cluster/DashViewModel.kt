@@ -101,7 +101,7 @@ class DashViewModel @Inject constructor(private val dashRepository: DashReposito
      * signal is provided to the unit.
      */
     fun onSignal(owner: LifecycleOwner, signal: String, onChanged: (value: Float?) -> Unit) {
-        liveCarState[signal]!!.observe(owner) { onChanged(it) }
+        liveCarState[signal]!!.observe(owner) { onChanged(it?.value) }
     }
 
     /**

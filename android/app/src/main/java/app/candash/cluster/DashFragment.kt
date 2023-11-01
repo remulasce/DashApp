@@ -1064,6 +1064,8 @@ class DashFragment : Fragment() {
     }
 
     private fun updateBlackout() {
+        // FIXME: Don't during testing.
+        return
         if (viewModel.carState[SName.displayOn] == null) {
             // Don't change the visibility if we lost the signal, maintain the last state
             return

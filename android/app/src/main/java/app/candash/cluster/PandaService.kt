@@ -31,7 +31,7 @@ class PandaService(val sharedPreferences: SharedPreferences, val context: Contex
     private val goodbye = "bye"
     private val loopMinInterval = 10
     private var lastHeartbeatTimestamp = 0L
-    private val heartBeatIntervalMs = 4_000
+    private val heartBeatIntervalMs = 1_000
     private val socketTimeoutMs = 1_000
     private var socketTimeoutCounter = 0
     private val signalHelper = CANSignalHelper(sharedPreferences)

@@ -1,12 +1,16 @@
 package app.candash.cluster
 
+import kotlinx.coroutines.CoroutineScope
+import kotlin.coroutines.CoroutineContext
+
 /**
  * To create a different CANService, add your new service to the CANServiceType, create a new
  * class that implements CANService, and add the new class to the CANServiceFactory.
  */
 interface CANService {
-    suspend fun startRequests(signalNamesToRequest: List<String>)
-    suspend fun shutdown()
+    fun startRequests(lifetime: CoroutineScope)
+    fun shutdown()
+    fun restart()
     fun clearCarState()
     fun carState() : CarState
     fun carStateTimestamp() : CarStateTimestamp

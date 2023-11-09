@@ -2,6 +2,7 @@ package app.candash.cluster
 
 import android.content.SharedPreferences
 import android.util.Log
+import com.google.common.collect.Lists
 import java.lang.Float.max
 
 class CANSignalHelper(val sharedPreferences: SharedPreferences) {
@@ -30,7 +31,7 @@ class CANSignalHelper(val sharedPreferences: SharedPreferences) {
     fun addFilterPackets(signalNamesToUse: List<String>, flipBus: Boolean): List<ByteArray> {
         // Build a set of bus/frame pairs to remove duplicate filter requests
         val signalsToUse = mutableSetOf<Pair<Int, Hex>>()
-        val names = signalNamesToUse.ifEmpty { getRealCANSignalNames() }
+        var names = signalNamesToUse.ifEmpty { getRealCANSignalNames() }
         names.forEach {
             signalsToUse.add(Pair(nameToSignal[it]!!.busId, nameToSignal[it]!!.frameId))
         }

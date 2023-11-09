@@ -1,6 +1,10 @@
 package app.candash.cluster
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import java.util.concurrent.Executors
@@ -16,8 +20,9 @@ class MockCANService : CANService {
     private val liveCarState = createLiveCarState()
     private var clearRequest = false
 
-    override suspend fun startRequests(signalNamesToRequest: List<String>) {
-        withContext(pandaContext) {
+    override fun startRequests(lifetime: CoroutineScope) {
+        // FIXME: wtf
+        lifetime.launch(pandaContext) {
             shutdown = false
             while (!shutdown) {
                 val newState = mockCarStates()[count.getAndAdd(1) % mockCarStates().size]
@@ -49,10 +54,12 @@ class MockCANService : CANService {
         return CANServiceType.MOCK
     }
 
-    override suspend fun shutdown() {
-        withContext(pandaContext) {
-            shutdown = true
-        }
+    override fun shutdown() {
+        shutdown = true
+    }
+
+    override fun restart() {
+        shutdown = false
     }
 
     override fun clearCarState() {

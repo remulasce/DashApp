@@ -15,7 +15,11 @@ import java.net.InetAddress
 import javax.inject.Inject
 
 @HiltViewModel
-class DashViewModel @Inject constructor(private val dashRepository: DashRepository, private val sharedPreferences: SharedPreferences, @ApplicationContext context: Context) : ViewModel() {
+class DashViewModel @Inject constructor(
+    private val dashRepository: DashRepository,
+    private val sharedPreferences: SharedPreferences,
+    @ApplicationContext context: Context
+) : ViewModel() {
     private val TAG = DashViewModel::class.java.simpleName
 
     var carState: CarState = dashRepository.carState()
@@ -66,16 +70,14 @@ class DashViewModel @Inject constructor(private val dashRepository: DashReposito
         carState = dashRepository.carState()
         liveCarState = dashRepository.liveCarState()
         signalsToRequest = signalNamesToRequest
-        viewModelScope.launch {
-            dashRepository.startRequests(signalNamesToRequest)
-        }
+        dashRepository.startRequests(viewModelScope)
     }
 
     fun restart(){
         if (isRunning()) {
             shutdown()
         }
-        startUp(signalsToRequest)
+        dashRepository.restart()
     }
 
     fun isRunning() : Boolean{

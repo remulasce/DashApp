@@ -1,5 +1,6 @@
 package app.candash.cluster
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import javax.inject.Inject
 
@@ -18,16 +19,20 @@ class DashRepository @ExperimentalCoroutinesApi
         canServiceFactory.setServiceType(type)
     }
 
-    suspend fun startRequests(signalNamesToRequest: List<String>) {
-        getCANService().startRequests(signalNamesToRequest)
+    fun startRequests(lifetime: CoroutineScope) {
+        getCANService().startRequests(lifetime)
     }
 
     fun isRunning() : Boolean {
         return getCANService().isRunning()
     }
 
-    suspend fun shutdown() {
+    fun shutdown() {
         getCANService().shutdown()
+    }
+
+    fun restart() {
+        getCANService().restart()
     }
 
     fun clearCarState() {

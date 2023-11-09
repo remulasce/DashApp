@@ -223,6 +223,9 @@ class PandaService(val sharedPreferences: SharedPreferences, val context: Contex
                 // This case is here so the next lines line up. Can happen if restart() is sent
                 // while the service is shutdown
             } else if (currState is State.ShutdownType && nextState is State.Running) {
+                // kinda dumb, but if you close and restart the app real fast this forces the
+                // CANServer to close the old connection.
+                sendBye()
                 sendHello()
             } else if (currState is State.Running && nextState is State.ShutdownType) {
                 sendBye()

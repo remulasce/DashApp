@@ -100,6 +100,7 @@ object SName {
 
     // CANServer debug signals:
     const val canServerAck = "CANServer_Ehllo_Ack"
+    const val canServerPandaConnection = "CANServer_PandaConnection"
 }
 
 object SGroup {

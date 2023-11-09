@@ -222,6 +222,8 @@ class CANSignalHelper(val sharedPreferences: SharedPreferences) {
         insertCANSignal(SName.kwhDischargeTotal, Constants.vehicleBus, Hex(0x3D2), 0, 32, 0.001f, 0f, sna=4294967.295f)
         insertCANSignal(SName.kwhChargeTotal, Constants.vehicleBus, Hex(0x3D2), 32, 32, 0.001f, 0f, sna=4294967.295f)
 
+        insertCANSignal(SName.canServerPandaConnection, Constants.canServerBus, Hex(0x503), 0, 1, 1f, 0f)
+
         // Create augmented signals
         insertAugmentedCANSignal(SName.smoothBattAmps, listOf(SName.battAmps)) {
             val amps = it[SName.battAmps]

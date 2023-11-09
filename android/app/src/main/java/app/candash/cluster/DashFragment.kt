@@ -498,8 +498,8 @@ class DashFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             while (true) {
-                viewModel.carStateTimestamp[SName.canServerAck]?.let {
-                    if (System.currentTimeMillis() - it < 5000) {
+                viewModel.carStateTimestamp[SName.canServerPandaConnection]?.let {
+                    if (System.currentTimeMillis() - it < 10000) {
                         binding.canserverConnection.setImageResource(R.drawable.icons8_connected_24___)
                     } else {
                         binding.canserverConnection.setImageResource(R.drawable.icons8_disconnected_24___)

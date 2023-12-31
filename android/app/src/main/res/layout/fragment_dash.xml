@@ -10,7 +10,7 @@
         android:id="@+id/speed"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="100dp"
         android:fontFamily="@font/interextralight"
         android:fontFeatureSettings="tnum"
         android:gravity="center|center"
@@ -1500,11 +1500,12 @@
     <app.candash.cluster.LinearGauge
         android:id="@+id/power_bar"
         android:layout_width="match_parent"
-        android:layout_height="30dp"
+        android:layout_height="0dp"
         android:layout_marginBottom="0dp"
         android:layout_gravity="center"
         android:gravity="center|center_vertical"
 
+        app:layout_constraintTop_toTopOf="@id/power"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -1513,7 +1514,7 @@
         />
     <TextView
         android:id="@+id/efficiency"
-        android:layout_height="30dp"
+        android:layout_height="80dp"
         android:layout_width="0dp"
         android:layout_marginBottom="0dp"
         android:gravity="center|center_vertical"
@@ -1521,17 +1522,18 @@
         android:fontFeatureSettings="tnum"
 
 
-        app:autoSizeMaxTextSize="15dp"
+        app:autoSizeMaxTextSize="60dp"
         app:autoSizeMinTextSize="10dp"
         app:autoSizeStepGranularity="5dp"
         app:autoSizeTextType="uniform"
+        app:layout_constraintEnd_toEndOf="@id/power"
         app:layout_constraintStart_toStartOf="@id/power"
         app:layout_constraintBottom_toTopOf="@id/power"
-        app:layout_constraintWidth_percent=".2"
-        tools:text="3.4 W/Mi" />
+        app:layout_constraintWidth_percent=".4"
+        tools:text="3.4 Wh/Mi" />
     <TextView
         android:id="@+id/power"
-        android:layout_height="30dp"
+        android:layout_height="40dp"
         android:layout_width="0dp"
         android:layout_marginBottom="0dp"
         android:gravity="center|center_vertical"
@@ -1539,7 +1541,7 @@
         android:fontFeatureSettings="tnum"
 
 
-        app:autoSizeMaxTextSize="15dp"
+        app:autoSizeMaxTextSize="20dp"
         app:autoSizeMinTextSize="10dp"
         app:autoSizeStepGranularity="5dp"
         app:autoSizeTextType="uniform"

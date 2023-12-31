@@ -80,31 +80,31 @@ class MockCANService : CANService {
     
     private fun mockCarStates() : List<CarState> =
         listOf(
-            createCarState(mutableMapOf(
-                SName.autopilotState to 2f,
-                SName.accState to 4f,
-                SName.accActive to 0f,
-                SName.isSunUp to 1f,
-                SName.autopilotHands to 1f,
-                SName.gearSelected to SVal.gearDrive,
-                SName.stateOfCharge to 70f,
-                SName.turnSignalLeft to 1.0f,
-                SName.battAmps to -20f,
-                SName.battVolts to 390f,
-                SName.uiSpeedUnits to 0f,
-                SName.displayOn to 1f,
-
-                SName.liftgateState to 2f,
-                SName.frunkState to 2f,
-                SName.frontLeftDoorState to 2f,
-                SName.frontRightDoorState to 2f,
-                SName.rearLeftDoorState to 2f,
-                SName.rearRightDoorState to 2f,
-                SName.lightingState to SVal.lightsOff,
-                SName.chargeStatus to SVal.chargeStatusInactive,
-                SName.mapRegion to SVal.mapUS,
-                SName.fusedSpeedLimit to 65f
-                )),
+//            createCarState(mutableMapOf(
+//                SName.autopilotState to 2f,
+//                SName.accState to 4f,
+//                SName.accActive to 0f,
+//                SName.isSunUp to 1f,
+//                SName.autopilotHands to 1f,
+//                SName.gearSelected to SVal.gearDrive,
+//                SName.stateOfCharge to 70f,
+//                SName.turnSignalLeft to 1.0f,
+//                SName.battAmps to -20f,
+//                SName.battVolts to 390f,
+//                SName.uiSpeedUnits to 0f,
+//                SName.displayOn to 1f,
+//
+//                SName.liftgateState to 2f,
+//                SName.frunkState to 2f,
+//                SName.frontLeftDoorState to 2f,
+//                SName.frontRightDoorState to 2f,
+//                SName.rearLeftDoorState to 2f,
+//                SName.rearRightDoorState to 2f,
+//                SName.lightingState to SVal.lightsOff,
+//                SName.chargeStatus to SVal.chargeStatusInactive,
+//                SName.mapRegion to SVal.mapUS,
+//                SName.fusedSpeedLimit to 65f
+//                )),
             createCarState(mutableMapOf(
                 SName.autopilotState to 3f,
                 SName.accState to 4f,
@@ -119,7 +119,6 @@ class MockCANService : CANService {
                 SName.uiSpeedUnits to 0f,
 
                 SName.battVolts to 390f,
-                SName.uiSpeed to 0.0f,
                 // display should stay on because gear is in drive
                 SName.displayOn to 0f,
 
@@ -130,44 +129,47 @@ class MockCANService : CANService {
                 SName.brakePark to 1f,
                 SName.chargeStatus to SVal.chargeStatusInactive,
                 SName.mapRegion to SVal.mapEU,
-                SName.fusedSpeedLimit to 100f
-            )),
-            createCarState(mutableMapOf(
-                SName.autopilotState to 1f,
-                SName.accState to 2f,
-                SName.isSunUp to 1f,
-                SName.driveConfig to 1f,
-                SName.stateOfCharge to 70f,
-                SName.battAmps to -10f,
-                SName.battVolts to 390f,
-                SName.uiSpeedUnits to 0f,
-                SName.uiSpeed to 22.0f,
-                SName.displayOn to 1f,
+                SName.fusedSpeedLimit to 100f,
 
-                SName.frontLeftDoorState to 2f,
-                SName.lightingState to SVal.lightsPos,
-                SName.passengerUnbuckled to 0f,
-                SName.chargeStatus to SVal.chargeStatusActive,
-                SName.fusedSpeedLimit to SVal.fusedSpeedNone
+                SName.uiSpeed to 80f,
+                SName.power to 50_000f,
             )),
-            createCarState(mutableMapOf(
-                SName.autopilotState to 1f,
-                SName.isSunUp to 1f,
-                SName.uiSpeed to 65.0f,
-                SName.uiSpeedUnits to 0f,
-                SName.frontLeftDoorState to 1f,
-                SName.lightingState to SVal.lightsOn,
-                SName.chargeStatus to SVal.chargeStatusActive,
-                SName.power to 45000f,
-                SName.stateOfCharge to 55f,
-                SName.gearSelected to SVal.gearInvalid,
-                SName.displayOn to 1f,
-            )),
-            createCarState(mutableMapOf(
-                // display will turn off if the pref is enabled
-                SName.gearSelected to SVal.gearPark,
-                SName.displayOn to 0f,
-            ))
+//            createCarState(mutableMapOf(
+//                SName.autopilotState to 1f,
+//                SName.accState to 2f,
+//                SName.isSunUp to 1f,
+//                SName.driveConfig to 1f,
+//                SName.stateOfCharge to 70f,
+//                SName.battAmps to -10f,
+//                SName.battVolts to 390f,
+//                SName.uiSpeedUnits to 0f,
+//                SName.uiSpeed to 22.0f,
+//                SName.displayOn to 1f,
+//
+//                SName.frontLeftDoorState to 2f,
+//                SName.lightingState to SVal.lightsPos,
+//                SName.passengerUnbuckled to 0f,
+//                SName.chargeStatus to SVal.chargeStatusActive,
+//                SName.fusedSpeedLimit to SVal.fusedSpeedNone
+//            )),
+//            createCarState(mutableMapOf(
+//                SName.autopilotState to 1f,
+//                SName.isSunUp to 1f,
+//                SName.uiSpeed to 65.0f,
+//                SName.uiSpeedUnits to 0f,
+//                SName.frontLeftDoorState to 1f,
+//                SName.lightingState to SVal.lightsOn,
+//                SName.chargeStatus to SVal.chargeStatusActive,
+//                SName.power to 45000f,
+//                SName.stateOfCharge to 55f,
+//                SName.gearSelected to SVal.gearInvalid,
+//                SName.displayOn to 1f,
+//            )),
+//            createCarState(mutableMapOf(
+//                // display will turn off if the pref is enabled
+//                SName.gearSelected to SVal.gearPark,
+//                SName.displayOn to 0f,
+//            ))
         )
 
 

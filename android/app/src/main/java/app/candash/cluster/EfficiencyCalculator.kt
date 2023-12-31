@@ -21,7 +21,7 @@ class EfficiencyCalculator(
         val inMiles = prefs.getBooleanPref(Constants.uiSpeedUnitsMPH)
         val old = prefs.getPref(Constants.efficiencyLookBack)
         val options = if (inMiles) {
-            listOf(0f, 5f.miToKm, 15f.miToKm, 30f.miToKm)
+            listOf(0f, 1f.miToKm, 5f.miToKm, 15f.miToKm, 30f.miToKm)
         } else {
             listOf(0f, 10f, 25f, 50f)
         }
@@ -119,11 +119,11 @@ class EfficiencyCalculator(
         if (speed == 0f) {
             return null
         }
-        val instantEfficiency = power / speed / 1000f
+        val instantEfficiencyWh = power / speed
         return if (inMiles) {
-            "%.2f kWh/mi".format(instantEfficiency)
+            "%.0f Wh/mi".format(instantEfficiencyWh)
         } else {
-            "%.2f kWh/km".format(instantEfficiency)
+            "%.0f Wh/km".format(instantEfficiencyWh)
         }
     }
 
@@ -133,21 +133,21 @@ class EfficiencyCalculator(
         val newDischarge = parkedStartKwh?.first ?: viewModel.carState[SName.kwhDischargeTotal]
         val newCharge = parkedStartKwh?.second ?: viewModel.carState[SName.kwhChargeTotal]
         if (newOdo == null || newDischarge == null || newCharge == null) {
-            return null
+            return "-"
         }
         val targetKm = newOdo - lookBackKm
         val oldKwhTriple = kwhHistory.lastOrNull { it.first <= targetKm }
             ?: return getCalculatingText(inMiles, lookBackKm, newOdo)
 
         val odoDelta = newOdo - oldKwhTriple.first
-        var dischargeDelta = newDischarge - oldKwhTriple.second
-        var chargeDelta = newCharge - oldKwhTriple.third
+        var dischargeDeltaKwh = newDischarge - oldKwhTriple.second
+        var chargeDeltaKwh = newCharge - oldKwhTriple.third
         // Subtract parked consumption/charges
         for (parkedTriple in parkedKwhHistory.filter { it.first >= targetKm }) {
-            dischargeDelta -= parkedTriple.second
-            chargeDelta -= parkedTriple.third
+            dischargeDeltaKwh -= parkedTriple.second
+            chargeDeltaKwh -= parkedTriple.third
         }
-        val consumedWh = (dischargeDelta - chargeDelta) * 1000f
+        val consumedWh = (dischargeDeltaKwh - chargeDeltaKwh) / 1000
         return if (inMiles) {
             "%.0f Wh/mi".format((consumedWh / odoDelta.kmToMi))
         } else {

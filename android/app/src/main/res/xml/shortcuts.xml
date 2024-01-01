@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="modular"
+        android:shortcutShortLabel="@string/modular_shortcut_label"
+        android:icon="@drawable/ic_autopilot"
+        >
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="app.candash.cluster"
+            android:targetClass="app.candash.cluster.compose.ModularDashActivity" />
+    </shortcut>
+</shortcuts>

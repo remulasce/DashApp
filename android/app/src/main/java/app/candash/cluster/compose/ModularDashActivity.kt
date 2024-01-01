@@ -10,8 +10,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsEndWidth
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -19,7 +19,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -58,7 +57,8 @@ fun MainLayout3Cols() {
                 listOf(
                     HistoricalEfficiency("330 wh/mi", "1 mi", "72 mph"),
                     HistoricalEfficiency("368 wh/mi", "3 mi", "76 mph")
-                )
+                ),
+                "Recent Efficiency"
             )
         }
         Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
@@ -93,17 +93,18 @@ private fun titleLabelTextStyle() = MaterialTheme.typography.labelSmall
 data class HistoricalEfficiency(val efficiency: String, val mileage: String, val avgSpeed: String)
 
 @Composable
-private fun EfficiencyTable(efficiencies: List<HistoricalEfficiency>) {
+private fun EfficiencyTable(efficiencies: List<HistoricalEfficiency>, tableTitle: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("Historical Efficiencies", style = titleLabelTextStyle())
-        Box(Modifier.border(2.dp, MaterialTheme.colorScheme.secondaryContainer)) {
+        Text(tableTitle, style = titleLabelTextStyle())
+        Box(
+            Modifier.border(2.dp, MaterialTheme.colorScheme.secondaryContainer)) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(5.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 efficiencies.forEach {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        horizontalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
                         Text(it.efficiency)
                         Column {
@@ -148,16 +149,18 @@ private fun Logging() {
 
 @Composable
 private fun EfficiencyLogging() {
-    Column(horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("Efficiency Logging", style = titleLabelTextStyle())
-            Button(onClick = { /*TODO*/ }) {
-                Text("Start / Stop")
-            }
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("Efficiency Logging", style = titleLabelTextStyle())
+        Button(onClick = { /*TODO*/ }) {
+            Text("Start / Stop")
+        }
         Spacer(modifier = Modifier.size(10.dp))
-        Text("Recent Logs", style = titleLabelTextStyle())
-        EfficiencyTable(efficiencies = listOf(HistoricalEfficiency("368 wh/mi", "1 mi", "78 mph")))
-
+        EfficiencyTable(
+            tableTitle = "Recent Logs",
+            efficiencies = listOf(HistoricalEfficiency("368 wh/mi", "1 mi", "78 mph")),
+        )
     }
 }
 

@@ -24,7 +24,7 @@ class DashViewModel @Inject constructor(
 
     var carState: CarState = dashRepository.carState()
     var carStateTimestamp = dashRepository.carStateTimestamp()
-    private var liveCarState = dashRepository.liveCarState()
+    var liveCarState = dashRepository.liveCarState()
     private var viewToShowData: MutableLiveData<String> = MutableLiveData()
     private var nsdManager = (context.getSystemService(Context.NSD_SERVICE) as NsdManager?)!!
     private var windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager

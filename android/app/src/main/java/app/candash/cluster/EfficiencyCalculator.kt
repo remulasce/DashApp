@@ -117,7 +117,7 @@ class EfficiencyCalculator(
         val speed = viewModel.carState[SName.uiSpeed] ?: 0f
         // If speed is 0 (or null) return to prevent "infinity kWh/mi"
         if (speed == 0f) {
-            return null
+            return "-"
         }
         val instantEfficiencyWh = power / speed
         return if (inMiles) {
@@ -147,11 +147,11 @@ class EfficiencyCalculator(
             dischargeDeltaKwh -= parkedTriple.second
             chargeDeltaKwh -= parkedTriple.third
         }
-        val consumedWh = (dischargeDeltaKwh - chargeDeltaKwh) / 1000
+        val consumedKwh = dischargeDeltaKwh - chargeDeltaKwh
         return if (inMiles) {
-            "%.0f Wh/mi".format((consumedWh / odoDelta.kmToMi))
+            "%.0f Wh/mi".format(consumedKwh / odoDelta.kmToMi)
         } else {
-            "%.0f Wh/km".format(consumedWh / odoDelta)
+            "%.0f Wh/km".format(consumedKwh / odoDelta)
         }
     }
 

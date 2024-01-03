@@ -1,5 +1,6 @@
 package app.candash.cluster.compose
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,36 +17,47 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
+import app.candash.cluster.CarState
 import app.candash.cluster.DashViewModel
+import app.candash.cluster.EfficiencyCalculator
 import app.candash.cluster.LiveCarState
 import app.candash.cluster.SName
 import app.candash.cluster.SVal
+import app.candash.cluster.SignalName
 import app.candash.cluster.SignalState
+import app.candash.cluster.compose.ComposeScope.Companion.createComposableCarStateFromLiveData
+import app.candash.cluster.compose.ComposeScope.Companion.createComposableCarStateFromMap
+import app.candash.cluster.compose.ComposeScope.Companion.toState
 import app.candash.cluster.compose.ui.theme.CANDashTheme
-import app.candash.cluster.createCarState
-import app.candash.cluster.createLiveCarState
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
+import kotlin.math.roundToInt
 
 @AndroidEntryPoint
 class ModularDashActivity : ComponentActivity() {
 
     private lateinit var viewModel: DashViewModel
+    private lateinit var efficiency: EfficiencyCalculator
+    private val prefs = getSharedPreferences("modular", Context.MODE_PRIVATE)
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel = ViewModelProvider(this)[DashViewModel::class.java]
         viewModel.startUp()
-
+        efficiency = EfficiencyCalculator(viewModel.carState, prefs)
 
         setContent {
             CANDashTheme {
@@ -54,14 +66,67 @@ class ModularDashActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ComposeScope(viewModel.liveCarState).MainLayout3Cols()
+                    ComposeScope(
+                        viewModel.liveCarState.createComposableCarStateFromLiveData(),
+                        efficiency.toState()
+                    ).MainLayout3Cols()
                 }
             }
         }
     }
 }
 
-class ComposeScope(val liveCarState: LiveCarState) {
+typealias ComposableCarState = Map<String, State<SignalState?>>
+
+
+typealias ComposableEfficiency = MutableList<ComposeScope.HistoricalEfficiency>
+
+class ComposeScope(val carState: ComposableCarState, efficiency: ComposableEfficiency) {
+
+    companion object {
+        @Composable
+        fun LiveCarState.createComposableCarStateFromLiveData(): ComposableCarState {
+            return this.mapValues {
+                it.value.observeAsState()
+            }
+        }
+
+        @Composable
+        fun CarState.createComposableCarStateFromMap(): ComposableCarState {
+            return this.mapValues {
+                mutableStateOf(SignalState(it.value ?: 0f, 0))
+            }
+        }
+
+        @Composable
+        fun EfficiencyCalculator.toState(): ComposableEfficiency {
+            val efficiency = mutableStateListOf<HistoricalEfficiency>()
+            LaunchedEffect(this) {
+                while (true) {
+                    this@toState.updateKwhHistory()
+                    val newEfficiency = mutableListOf<HistoricalEfficiency>()
+                    listOf(1f, 5f, 10f).forEach {
+                        newEfficiency.add(
+                            HistoricalEfficiency(
+                                this@toState.getEfficiencyText(it) ?: "-",
+                                "$it mi",
+                                "- mph"
+                            )
+                        )
+                    }
+
+                    efficiency.clear()
+                    efficiency.addAll(newEfficiency)
+                    delay(100)
+                }
+            }
+            return efficiency
+        }
+    }
+
+    @Composable
+    private fun currentState(signalName: SignalName) = carState[signalName]?.value?.value
+
     @Composable
     fun MainLayout3Cols() {
         Column(
@@ -94,10 +159,8 @@ class ComposeScope(val liveCarState: LiveCarState) {
         ) {
             Text("Live Values", style = titleLabelTextStyle())
             Speed()
-            LiveEfficiency("500 wh/mi")
-
+            LiveEfficiency()
         }
-
     }
 
     @Composable
@@ -137,17 +200,20 @@ class ComposeScope(val liveCarState: LiveCarState) {
     }
 
     @Composable
-    private fun LiveEfficiency(efficiency: String) {
-        Text(efficiency, fontSize = 32.sp)
+    private fun LiveEfficiency() {
+        val value = 486.0
+        Text("${value.roundToInt()} wh/mi", fontSize = 32.sp)
     }
 
     @Composable
     private fun Speed() {
-        val speed =
-            "${liveCarState[SName.uiSpeed]?.observeAsState()?.value?.value} " +
-                    "${liveCarState[SName.uiSpeedUnits]?.observeAsState()?.value?.value}"
+        val uiSpeed = "%.0f".format(currentState(SName.uiSpeed))
+        val speedUnits = "mph"
+
+        val speed = "$uiSpeed $speedUnits"
         Text(text = speed, fontSize = 48.sp)
     }
+
 
     @Composable
     private fun Logging() {
@@ -206,7 +272,35 @@ class ComposeScope(val liveCarState: LiveCarState) {
 fun DashPreview() {
     CANDashTheme {
         ComposeScope(
-            createLiveCarState()
+            mutableMapOf<String, Float?>(
+                SName.autopilotState to 3f,
+                SName.accState to 4f,
+                SName.accActive to 1f,
+                SName.turnSignalLeft to 1.0f,
+                SName.isSunUp to 1f,
+                SName.autopilotHands to 1f,
+                SName.driveConfig to 0f,
+                SName.gearSelected to SVal.gearDrive,
+                SName.stateOfCharge to 70f,
+                SName.battAmps to -23f,
+                SName.uiSpeedUnits to 0f,
+
+                SName.battVolts to 390f,
+                // display should stay on because gear is in drive
+                SName.displayOn to 0f,
+
+                SName.frontLeftDoorState to 2f,
+                SName.lightingState to SVal.lightDRL,
+                SName.passengerUnbuckled to 1f,
+                SName.limRegen to 1f,
+                SName.brakePark to 1f,
+                SName.chargeStatus to SVal.chargeStatusInactive,
+                SName.mapRegion to SVal.mapEU,
+                SName.fusedSpeedLimit to 100f,
+
+                SName.uiSpeed to 80f,
+                SName.power to 50_000f,
+            ).createComposableCarStateFromMap(), listOf()
         ).MainLayout3Cols()
     }
 }

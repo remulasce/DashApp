@@ -4,7 +4,6 @@ import android.animation.ArgbEvaluator
 import android.animation.ValueAnimator
 import android.content.Context
 import android.content.SharedPreferences
-import android.content.res.Resources
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.GradientDrawable.Orientation
@@ -22,7 +21,6 @@ import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.animation.doOnEnd
-import androidx.core.view.setMargins
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -423,7 +421,7 @@ class DashFragment : Fragment() {
             view.postDelayed({ updateBlackout() }, Constants.blackoutOverrideSeconds * 1000L)
         }
 
-        val efficiencyCalculator = EfficiencyCalculator(viewModel, prefs)
+        val efficiencyCalculator = EfficiencyCalculator(viewModel.carState, prefs)
 
         binding.efficiency.setOnClickListener {
             binding.infoToast.text = efficiencyCalculator.changeLookBack()

@@ -71,6 +71,7 @@ class DashViewModel @Inject constructor(
         liveCarState = dashRepository.liveCarState()
         signalsToRequest = signalNamesToRequest
         dashRepository.startRequests(viewModelScope)
+        efficiency = EfficiencyCalculator(carState, sharedPreferences)
     }
 
     fun restart(){

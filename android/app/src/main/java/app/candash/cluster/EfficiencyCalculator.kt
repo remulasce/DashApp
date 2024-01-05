@@ -41,7 +41,7 @@ class EfficiencyCalculator(
         saveHistoryToPrefs()
     }
 
-    fun getEfficiencyText(lookBackKm: Float = prefs.getPref(Constants.efficiencyLookBack)): String? {
+    fun getEfficiencyText(lookBackKm: Float = prefs.getPref(Constants.efficiencyLookBack)): String {
         val inMiles = prefs.getBooleanPref(Constants.uiSpeedUnitsMPH)
         val power = carState[SName.power] ?: 0f
         return if (lookBackKm == 0f) {
@@ -112,7 +112,7 @@ class EfficiencyCalculator(
         saveHistoryToPrefs()
     }
 
-    private fun getInstantEfficiencyText(inMiles: Boolean, power: Float): String? {
+    private fun getInstantEfficiencyText(inMiles: Boolean, power: Float): String {
         val speed = carState[SName.uiSpeed] ?: 0f
         // If speed is 0 (or null) return to prevent "infinity kWh/mi"
         if (speed == 0f) {
@@ -126,7 +126,7 @@ class EfficiencyCalculator(
         }
     }
 
-    private fun getRecentEfficiencyText(inMiles: Boolean, lookBackKm: Float): String? {
+    private fun getRecentEfficiencyText(inMiles: Boolean, lookBackKm: Float): String {
         val newOdo = carState[SName.odometer]
         // If parked, use the (dis)charge values from the start of park so display doesn't change
         val newDischarge = parkedStartKwh?.first ?: carState[SName.kwhDischargeTotal]

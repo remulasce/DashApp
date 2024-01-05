@@ -1,6 +1,7 @@
 package app.candash.cluster.compose
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -50,11 +52,12 @@ class ModularDashActivity : ComponentActivity() {
 
     private lateinit var viewModel: DashViewModel
     private lateinit var efficiency: EfficiencyCalculator
-    private val prefs = getSharedPreferences("modular", Context.MODE_PRIVATE)
+    private lateinit var prefs: SharedPreferences
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        prefs = getSharedPreferences("modular", Context.MODE_PRIVATE)
         viewModel = ViewModelProvider(this)[DashViewModel::class.java]
         viewModel.startUp()
         efficiency = EfficiencyCalculator(viewModel.carState, prefs)
@@ -81,7 +84,7 @@ typealias ComposableCarState = Map<String, State<SignalState?>>
 
 typealias ComposableEfficiency = MutableList<ComposeScope.HistoricalEfficiency>
 
-class ComposeScope(val carState: ComposableCarState, efficiency: ComposableEfficiency) {
+class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableEfficiency) {
 
     companion object {
         @Composable
@@ -137,12 +140,9 @@ class ComposeScope(val carState: ComposableCarState, efficiency: ComposableEffic
             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
                 LiveValues()
             }
-            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
+            Box(modifier = Modifier.weight(1f).fillMaxWidth(.9f), contentAlignment = Alignment.TopCenter) {
                 EfficiencyTable(
-                    listOf(
-                        HistoricalEfficiency("330 wh/mi", "1 mi", "72 mph"),
-                        HistoricalEfficiency("368 wh/mi", "3 mi", "76 mph")
-                    ),
+                    efficiencies = efficiency,
                     "Recent Efficiency"
                 )
             }
@@ -300,7 +300,7 @@ fun DashPreview() {
 
                 SName.uiSpeed to 80f,
                 SName.power to 50_000f,
-            ).createComposableCarStateFromMap(), listOf()
+            ).createComposableCarStateFromMap(), mutableListOf()
         ).MainLayout3Cols()
     }
 }

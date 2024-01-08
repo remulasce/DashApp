@@ -12,17 +12,22 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Devices
@@ -44,6 +49,7 @@ import app.candash.cluster.compose.ComposeScope.Companion.toState
 import app.candash.cluster.compose.ui.theme.CANDashTheme
 import app.candash.cluster.compose.ui.theme.TitleLabelTextStyle
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 import kotlin.time.TimeSource
@@ -63,17 +69,30 @@ class ModularDashActivity : ComponentActivity() {
         viewModel.startUp()
         efficiency = EfficiencyCalculator(viewModel.carState, prefs)
 
+        data class SnackbarLauncher(
+            val snackbarHostState: SnackbarHostState,
+            val scope: CoroutineScope
+        )
+
         setContent {
-            CANDashTheme {
-                // A surface container using the 'background' color from the theme
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    ComposeScope(
-                        viewModel.liveCarState.createComposableCarStateFromLiveData(),
-                        efficiency.toState()
-                    ).MainLayout3Cols()
+            val scope = rememberCoroutineScope()
+            val snackbarHostState = remember { SnackbarHostState() }
+            CompositionLocalProvider(LocalSnackbarHost provides snackbarHostState) {
+                CANDashTheme {
+                    // A surface container using the 'background' color from the theme
+                    Scaffold(
+                        modifier = Modifier.fillMaxSize(),
+                        snackbarHost = {
+                            SnackbarHost(hostState = snackbarHostState)
+                        }
+                    ) { padding ->
+                        Box(Modifier.padding(padding)) {
+                            ComposeScope(
+                                viewModel.liveCarState.createComposableCarStateFromLiveData(),
+                                efficiency.toState()
+                            ).MainLayout3Cols()
+                        }
+                    }
                 }
             }
         }
@@ -90,7 +109,6 @@ typealias ComposableEfficiency = MutableList<HistoricalEfficiency>
 
 
 class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableEfficiency) {
-
 
     companion object {
         @Composable
@@ -148,8 +166,10 @@ class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableE
             verticalArrangement = Arrangement.spacedBy(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(modifier = Modifier.weight(.25f),
-                contentAlignment = Alignment.TopCenter) {
+            Box(
+                modifier = Modifier.weight(.25f),
+                contentAlignment = Alignment.TopCenter
+            ) {
                 LiveValues()
             }
             Box(

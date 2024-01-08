@@ -129,7 +129,7 @@ class MockCANService : CANService {
                 SName.fusedSpeedLimit to 100f,
 
                 SName.kwhDischargeTotal to 1000f,
-                SName.odometer to 1f,
+                SName.odometerKm to 1f,
                 SName.uiSpeed to 80f,
                 SName.power to 50_000f,
             )),
@@ -160,7 +160,7 @@ class MockCANService : CANService {
                 SName.fusedSpeedLimit to 100f,
 
                 SName.kwhDischargeTotal to 1000f,
-                SName.odometer to 2f,
+                SName.odometerKm to 2f,
                 SName.uiSpeed to 75f,
                 SName.power to 40_000f,
             )),

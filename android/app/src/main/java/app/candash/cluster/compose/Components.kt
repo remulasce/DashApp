@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -66,3 +68,10 @@ data class HistoricalEfficiency(
     val mileage: String,
     val avgSpeed: String?
 )
+
+val LocalSnackbarHost = compositionLocalOf<SnackbarHostState?> {
+    null
+    // defaults
+    //                SnackbarLauncher(snackbarHostState, scope)
+//    snackbarHostState
+}

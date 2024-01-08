@@ -53,10 +53,10 @@ class EfficiencyLoggingTest {
     fun testBuildEfficiency() {
         val state =
             mutableMapOf<String, Float?>(
-                SName.odometer to 0f,
+                SName.odometerKm to 0f,
                 SName.kwhDischargeTotal to 0f
             ).createTestComposableCarStateFromMap()
-        val odometerState: MutableState<SignalState?> = state[SName.odometer]!!
+        val odometerState: MutableState<SignalState?> = state[SName.odometerKm]!!
         val dischargState: MutableState<SignalState?> = state[SName.kwhDischargeTotal]!!
 
         val time = TestTimeSource()

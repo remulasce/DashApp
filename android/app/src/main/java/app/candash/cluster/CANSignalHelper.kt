@@ -2,7 +2,6 @@ package app.candash.cluster
 
 import android.content.SharedPreferences
 import android.util.Log
-import com.google.common.collect.Lists
 import java.lang.Float.max
 
 class CANSignalHelper(val sharedPreferences: SharedPreferences) {
@@ -213,7 +212,7 @@ class CANSignalHelper(val sharedPreferences: SharedPreferences) {
         // insertCANSignal(SName.tpmsSoft, Constants.vehicleBus, Hex(0x123), 13, 1, 1f, 0f)
         // insertCANSignal(SName.tpmsHard, Constants.vehicleBus, Hex(0x123), 12, 1, 1f, 0f)
 
-        insertCANSignal(SName.odometer, Constants.vehicleBus, Hex(0x3B6), 0, 32, 0.001f, 0f, sna=4294967.295f)
+        insertCANSignal(SName.odometerKm, Constants.vehicleBus, Hex(0x3B6), 0, 32, 0.001f, 0f, sna=4294967.295f)
         insertCANSignal(SName.PINenabled, Constants.vehicleBus, Hex(0x3B3), 6, 1, 1f, 0f)
         insertCANSignal(SName.PINpassed, Constants.vehicleBus, Hex(0x3B3), 7, 1, 1f, 0f)
         insertCANSignal(SName.brakeApplied, Constants.chassisBus, Hex(0x39D), 16, 2, 1f, 0f)

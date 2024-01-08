@@ -66,7 +66,7 @@ object SName {
     const val maxRegenPower: SignalName = "maxRegenPower"
     const val maxSpeedAP: SignalName = "maxSpeedAP"
     const val nominalFullPackEnergy: SignalName = "nominalFullPackEnergy"
-    const val odometer: SignalName = "odometer"
+    const val odometerKm: SignalName = "odometer"
     const val outsideTemp: SignalName = "outsideTemp"
     const val partyHoursLeft: SignalName = "partyHoursLeft"
     const val passengerUnbuckled: SignalName = "passengerUnbuckled"

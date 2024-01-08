@@ -5,7 +5,6 @@ import android.app.Application
 import android.content.Context.MODE_PRIVATE
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import org.junit.Assert.assertEquals
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -14,7 +13,7 @@ import org.robolectric.RobolectricTestRunner
 class EfficiencyCalculatorTest {
 
 
-    private val app: Application = getApplicationContext<Application>()
+    private val app: Application = getApplicationContext()
     private val carState = createCarState(
         mutableMapOf(
             SName.uiSpeed to 60f,
@@ -27,16 +26,6 @@ class EfficiencyCalculatorTest {
         carState,
         app.getSharedPreferences("test", MODE_PRIVATE)
     )
-
-    @Before
-    fun setUp() {
-
-    }
-
-    @Test
-    fun testSanity() {
-        assert(true)
-    }
 
     @Test
     fun testInstantaneousDisplay() {

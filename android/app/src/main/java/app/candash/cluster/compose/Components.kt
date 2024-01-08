@@ -13,17 +13,23 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import app.candash.cluster.compose.ui.theme.TitleLabelTextStyle
 
 @Composable
 fun EfficiencyTable(efficiencies: List<HistoricalEfficiency>, tableTitle: String) {
     Column(
-        Modifier.width(IntrinsicSize.Max),
+        Modifier
+            .width(IntrinsicSize.Max)
+            .padding(5.dp)
+            .testTag("EfficiencyTable"),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(tableTitle, style = TitleLabelTextStyle())
-        if (efficiencies.isEmpty()) { return }
+        if (efficiencies.isEmpty()) {
+            return
+        }
         Card {
             Column(
                 Modifier
@@ -36,8 +42,13 @@ fun EfficiencyTable(efficiencies: List<HistoricalEfficiency>, tableTitle: String
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
-                        Text(it.efficiency)
-                        Column {
+                        Text(
+                            it.efficiency,
+                            modifier = Modifier.weight(.5f)
+                        )
+                        Column(
+                            modifier = Modifier.weight(.5f)
+                        ) {
                             it.avgSpeed?.let {
                                 Text(it)
                             }

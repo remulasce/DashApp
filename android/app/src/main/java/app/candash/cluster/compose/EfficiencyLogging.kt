@@ -16,6 +16,9 @@ import androidx.compose.ui.unit.dp
 import app.candash.cluster.SName
 import app.candash.cluster.compose.ui.theme.TitleLabelTextStyle
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.convert
+import kotlin.time.DurationUnit
+import kotlin.time.ExperimentalTime
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 
@@ -40,6 +43,7 @@ fun EfficiencyLogging(
     )
 }
 
+@OptIn(ExperimentalTime::class)
 private fun onStartStopClick(
     startPoint: MutableState<EfficiencyLog?>,
     carState: ComposableCarState,
@@ -56,7 +60,10 @@ private fun onStartStopClick(
             val dTime: Duration? = it.timestamp?.elapsedNow()
             val avgSpeed: Float? =
                 dTime?.let {
-                    dOdo / it.inWholeMilliseconds
+                    convert(
+                        (dOdo / it.inWholeMilliseconds).toDouble(),
+                        DurationUnit.HOURS, // Reverse conversion, since 'hour' is on divident
+                        DurationUnit.MILLISECONDS).toFloat()
                 }
             val efficiencyWh = dDischKwh / dOdo * 1000
             recentLogs.value += HistoricalEfficiency(

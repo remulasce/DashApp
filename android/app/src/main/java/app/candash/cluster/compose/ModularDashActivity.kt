@@ -18,6 +18,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateListOf
@@ -99,8 +100,13 @@ class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableE
             }
         }
 
-        @Composable
         fun CarState.createComposableCarStateFromMap(): ComposableCarState {
+            return this.mapValues {
+                mutableStateOf(SignalState(it.value ?: 0f, 0))
+            }
+        }
+
+        fun CarState.createTestComposableCarStateFromMap(): Map<String, MutableState<SignalState?>> {
             return this.mapValues {
                 mutableStateOf(SignalState(it.value ?: 0f, 0))
             }
@@ -142,12 +148,13 @@ class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableE
             verticalArrangement = Arrangement.spacedBy(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
+            Box(modifier = Modifier.weight(.25f),
+                contentAlignment = Alignment.TopCenter) {
                 LiveValues()
             }
             Box(
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(.25f)
                     .fillMaxWidth(.9f),
                 contentAlignment = Alignment.TopCenter
             ) {
@@ -156,7 +163,7 @@ class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableE
                     "Recent Efficiency"
                 )
             }
-            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
+            Box(modifier = Modifier.weight(.5f), contentAlignment = Alignment.TopCenter) {
                 Logging()
             }
         }

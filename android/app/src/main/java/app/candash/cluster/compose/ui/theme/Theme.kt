@@ -68,3 +68,6 @@ fun CANDashTheme(
         content = content
     )
 }
+
+@Composable
+fun TitleLabelTextStyle() = MaterialTheme.typography.labelSmall

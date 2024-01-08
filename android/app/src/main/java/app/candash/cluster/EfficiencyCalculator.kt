@@ -146,11 +146,11 @@ class EfficiencyCalculator(
             dischargeDeltaKwh -= parkedTriple.second
             chargeDeltaKwh -= parkedTriple.third
         }
-        val consumedKwh = dischargeDeltaKwh - chargeDeltaKwh
+        val consumedWh = (dischargeDeltaKwh - chargeDeltaKwh) * 1000
         return if (inMiles) {
-            "%.0f Wh/mi".format(consumedKwh / odoDelta.kmToMi)
+            "%.0f Wh/mi".format(consumedWh / odoDelta.kmToMi)
         } else {
-            "%.0f Wh/km".format(consumedKwh / odoDelta)
+            "%.0f Wh/km".format(consumedWh / odoDelta)
         }
     }
 

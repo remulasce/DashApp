@@ -1,11 +1,8 @@
 package app.candash.cluster
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.newSingleThreadContext
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
@@ -26,8 +23,8 @@ class MockCANService : CANService {
             shutdown = false
             while (!shutdown) {
                 val newState = mockCarStates()[count.getAndAdd(1) % mockCarStates().size]
-                carState.clear()
-                liveCarState.clear()
+//                carState.clear()
+//                liveCarState.clear()
                 for (state in newState) {
                     carState[state.key] = state.value
                     liveCarState[state.key]!!.postValue(SignalState(state.value!!, System.currentTimeMillis()))
@@ -131,8 +128,41 @@ class MockCANService : CANService {
                 SName.mapRegion to SVal.mapEU,
                 SName.fusedSpeedLimit to 100f,
 
+                SName.kwhDischargeTotal to 1000f,
+                SName.odometer to 1f,
                 SName.uiSpeed to 80f,
                 SName.power to 50_000f,
+            )),
+            createCarState(mutableMapOf(
+                SName.autopilotState to 3f,
+                SName.accState to 4f,
+                SName.accActive to 1f,
+                SName.turnSignalLeft to 1.0f,
+                SName.isSunUp to 1f,
+                SName.autopilotHands to 1f,
+                SName.driveConfig to 0f,
+                SName.gearSelected to SVal.gearDrive,
+                SName.stateOfCharge to 70f,
+                SName.battAmps to -23f,
+                SName.uiSpeedUnits to 0f,
+
+                SName.battVolts to 390f,
+                // display should stay on because gear is in drive
+                SName.displayOn to 0f,
+
+                SName.frontLeftDoorState to 2f,
+                SName.lightingState to SVal.lightDRL,
+                SName.passengerUnbuckled to 1f,
+                SName.limRegen to 1f,
+                SName.brakePark to 1f,
+                SName.chargeStatus to SVal.chargeStatusInactive,
+                SName.mapRegion to SVal.mapEU,
+                SName.fusedSpeedLimit to 100f,
+
+                SName.kwhDischargeTotal to 1000f,
+                SName.odometer to 2f,
+                SName.uiSpeed to 75f,
+                SName.power to 40_000f,
             )),
 //            createCarState(mutableMapOf(
 //                SName.autopilotState to 1f,

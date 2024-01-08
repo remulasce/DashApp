@@ -3,17 +3,15 @@ package app.candash.cluster.compose
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -43,9 +41,11 @@ import app.candash.cluster.compose.ComposeScope.Companion.createComposableCarSta
 import app.candash.cluster.compose.ComposeScope.Companion.createComposableCarStateFromMap
 import app.candash.cluster.compose.ComposeScope.Companion.toState
 import app.candash.cluster.compose.ui.theme.CANDashTheme
+import app.candash.cluster.compose.ui.theme.TitleLabelTextStyle
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
+import kotlin.time.TimeSource
 
 @AndroidEntryPoint
 class ModularDashActivity : ComponentActivity() {
@@ -81,10 +81,15 @@ class ModularDashActivity : ComponentActivity() {
 
 typealias ComposableCarState = Map<String, State<SignalState?>>
 
+fun ComposableCarState.currentState(signalName: SignalName): Float? =
+    this[signalName]?.value?.value
 
-typealias ComposableEfficiency = MutableList<ComposeScope.HistoricalEfficiency>
+
+typealias ComposableEfficiency = MutableList<HistoricalEfficiency>
+
 
 class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableEfficiency) {
+
 
     companion object {
         @Composable
@@ -106,14 +111,15 @@ class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableE
             val efficiency = mutableStateListOf<HistoricalEfficiency>()
             LaunchedEffect(this) {
                 while (true) {
+                    Log.v("EffToState", "Recomposing efficiency occasionally")
                     this@toState.updateKwhHistory()
                     val newEfficiency = mutableListOf<HistoricalEfficiency>()
                     listOf(1f, 5f, 10f).forEach {
                         newEfficiency.add(
                             HistoricalEfficiency(
-                                this@toState.getEfficiencyText(it) ?: "-",
+                                this@toState.getEfficiencyText(it),
                                 "$it mi",
-                                "- mph"
+                                null
                             )
                         )
                     }
@@ -127,7 +133,6 @@ class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableE
         }
     }
 
-    @Composable
     private fun currentState(signalName: SignalName) = carState[signalName]?.value?.value
 
     @Composable
@@ -140,7 +145,12 @@ class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableE
             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
                 LiveValues()
             }
-            Box(modifier = Modifier.weight(1f).fillMaxWidth(.9f), contentAlignment = Alignment.TopCenter) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(.9f),
+                contentAlignment = Alignment.TopCenter
+            ) {
                 EfficiencyTable(
                     efficiencies = efficiency,
                     "Recent Efficiency"
@@ -157,52 +167,21 @@ class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableE
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Live Values", style = titleLabelTextStyle())
+            Text("Live Values", style = TitleLabelTextStyle())
             Speed()
             LiveEfficiency()
         }
     }
 
-    @Composable
-    private fun titleLabelTextStyle() = MaterialTheme.typography.labelSmall
-
-    data class HistoricalEfficiency(
-        val efficiency: String,
-        val mileage: String,
-        val avgSpeed: String
-    )
-
-    @Composable
-    private fun EfficiencyTable(efficiencies: List<HistoricalEfficiency>, tableTitle: String) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(tableTitle, style = titleLabelTextStyle())
-            Box(
-                Modifier.border(2.dp, MaterialTheme.colorScheme.secondaryContainer)
-            ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    efficiencies.forEach {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(20.dp)
-                        ) {
-                            Text(it.efficiency)
-                            Column {
-                                Text(it.avgSpeed)
-                                Text(it.mileage)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     @Composable
     private fun LiveEfficiency() {
-        val value = 486.0
-        Text("${value.roundToInt()} wh/mi", fontSize = 32.sp)
+        val power = currentState(SName.power)
+        val speed = currentState(SName.uiSpeed)
+        if (power != null && speed != null) {
+            val value = power / speed
+            Text("${value.roundToInt()} wh/mi", fontSize = 32.sp)
+        }
     }
 
     @Composable
@@ -218,13 +197,13 @@ class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableE
     @Composable
     private fun Logging() {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Logging", style = titleLabelTextStyle())
+            Text("Logging", style = TitleLabelTextStyle())
             Row(
                 verticalAlignment = Alignment.Top,
                 horizontalArrangement = Arrangement.Center
             ) {
                 Box(Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
-                    EfficiencyLogging()
+                    EfficiencyLogging(carState, TimeSource.Monotonic)
                 }
                 Box(Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
                     CANLogging()
@@ -234,27 +213,11 @@ class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableE
 
     }
 
-    @Composable
-    private fun EfficiencyLogging() {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("Efficiency Logging", style = titleLabelTextStyle())
-            Button(onClick = { /*TODO*/ }) {
-                Text("Start / Stop")
-            }
-            Spacer(modifier = Modifier.size(10.dp))
-            EfficiencyTable(
-                tableTitle = "Recent Logs",
-                efficiencies = listOf(HistoricalEfficiency("368 wh/mi", "1 mi", "78 mph")),
-            )
-        }
-    }
 
     @Composable
     private fun CANLogging() {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("CAN Logging", style = titleLabelTextStyle())
+            Text("CAN Logging", style = TitleLabelTextStyle())
             Button(onClick = { /*TODO*/ }) {
                 Text("Start / Stop")
             }
@@ -266,6 +229,7 @@ class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableE
 
     }
 }
+
 
 @Preview(showBackground = true, device = Devices.PIXEL_3, showSystemUi = true)
 @Composable

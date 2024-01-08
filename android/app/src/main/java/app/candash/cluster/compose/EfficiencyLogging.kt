@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -44,8 +45,8 @@ fun EfficiencyLogging(
     state: ComposableCarState,
     time: TimeSource
 ) {
-    val recentLogs: MutableState<List<HistoricalEfficiency>> = remember {
-        mutableStateOf<List<HistoricalEfficiency>>(
+    val recentLogs: MutableState<List<HistoricalEfficiency>> = rememberSaveable {
+        mutableStateOf(
             listOf()
         )
     }
@@ -77,8 +78,6 @@ private fun onStartStopClick(
     snackbar: SnackbarHostState?,
     snackbarScope: CoroutineScope?
 ) {
-
-
     startPoint.value?.let { it ->
         startPoint.value = null
         val odoMi = carState.currentState(signalName = SName.odometerKm)?.kmToMi

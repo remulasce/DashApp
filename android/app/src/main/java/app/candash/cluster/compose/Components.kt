@@ -1,5 +1,6 @@
 package app.candash.cluster.compose
 
+import android.os.Parcelable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -18,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import app.candash.cluster.compose.ui.theme.TitleLabelTextStyle
+import kotlinx.parcelize.Parcelize
 
 @Composable
 fun EfficiencyTable(efficiencies: List<HistoricalEfficiency>, tableTitle: String) {
@@ -63,11 +65,12 @@ fun EfficiencyTable(efficiencies: List<HistoricalEfficiency>, tableTitle: String
     }
 }
 
+@Parcelize
 data class HistoricalEfficiency(
     val efficiency: String,
     val mileage: String,
     val avgSpeed: String?
-)
+): Parcelable
 
 val LocalSnackbarHost = compositionLocalOf<SnackbarHostState?> {
     null

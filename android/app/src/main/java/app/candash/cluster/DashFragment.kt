@@ -785,7 +785,7 @@ class DashFragment : Fragment() {
             }
         }*/
 
-        viewModel.onSomeSignals(viewLifecycleOwner, listOf(SName.odometerKm, SName.gearSelected)) {
+        viewModel.onSomeSignals(viewLifecycleOwner, listOf(SName.odometer, SName.gearSelected)) {
             efficiencyCalculator.updateKwhHistory()
         }
 

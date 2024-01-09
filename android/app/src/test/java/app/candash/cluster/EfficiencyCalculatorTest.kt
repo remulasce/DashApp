@@ -80,7 +80,7 @@ class EfficiencyCalculatorTest {
         carState.putAll(
             createCarState(
                 mutableMapOf(
-                    SName.odometerKm to odometer,
+                    SName.odometer to odometer,
                     SName.kwhDischargeTotal to kwhDischargeTotal,
                 )
             )

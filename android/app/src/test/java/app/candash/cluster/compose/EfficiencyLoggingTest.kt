@@ -10,6 +10,7 @@ import app.candash.cluster.SName
 import app.candash.cluster.SignalState
 import app.candash.cluster.compose.ComposeScope.Companion.createComposableCarStateFromMap
 import app.candash.cluster.compose.ComposeScope.Companion.createTestComposableCarStateFromMap
+import app.candash.cluster.miToKm
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -53,10 +54,10 @@ class EfficiencyLoggingTest {
     fun testBuildEfficiency() {
         val state =
             mutableMapOf<String, Float?>(
-                SName.odometerKm to 0f,
-                SName.kwhDischargeTotal to 0f
+                SName.odometer to 1f.miToKm,
+                SName.kwhDischargeTotal to 1f
             ).createTestComposableCarStateFromMap()
-        val odometerState: MutableState<SignalState?> = state[SName.odometerKm]!!
+        val odometerState: MutableState<SignalState?> = state[SName.odometer]!!
         val dischargState: MutableState<SignalState?> = state[SName.kwhDischargeTotal]!!
 
         val time = TestTimeSource()
@@ -72,8 +73,8 @@ class EfficiencyLoggingTest {
 
             this.waitForIdle()
 
-            odometerState.value = SignalState(1f, 0)
-            dischargState.value = SignalState(1f, 0)
+            odometerState.value = SignalState(2f.miToKm, 0)
+            dischargState.value = SignalState(2f, 0)
             time += 1.hours
 
             this.waitForIdle()

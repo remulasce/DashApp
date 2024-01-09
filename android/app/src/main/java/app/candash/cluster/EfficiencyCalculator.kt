@@ -53,7 +53,7 @@ class EfficiencyCalculator(
 
     fun updateKwhHistory() {
         loadHistoryFromPrefs()
-        val odo = carState[SName.odometerKm]
+        val odo = carState[SName.odometer]
         val kwhDischargeTotal = carState[SName.kwhDischargeTotal]
         val kwhChargeTotal = carState[SName.kwhChargeTotal]
         if (odo == null || kwhDischargeTotal == null || kwhChargeTotal == null) {
@@ -127,7 +127,7 @@ class EfficiencyCalculator(
     }
 
     private fun getRecentEfficiencyText(inMiles: Boolean, lookBackKm: Float): String {
-        val newOdo = carState[SName.odometerKm]
+        val newOdo = carState[SName.odometer]
         // If parked, use the (dis)charge values from the start of park so display doesn't change
         val newDischarge = parkedStartKwh?.first ?: carState[SName.kwhDischargeTotal]
         val newCharge = parkedStartKwh?.second ?: carState[SName.kwhChargeTotal]

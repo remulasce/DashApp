@@ -1,5 +1,6 @@
 package app.candash.cluster.compose
 
+import android.content.Context
 import android.util.Log
 import androidx.compose.animation.core.EaseInOutSine
 import androidx.compose.animation.core.RepeatMode
@@ -24,6 +25,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -32,7 +34,9 @@ import app.candash.cluster.SName
 import app.candash.cluster.compose.ui.theme.TitleLabelTextStyle
 import app.candash.cluster.kmToMi
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import java.io.File
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.convert
 import kotlin.time.DurationUnit
@@ -56,13 +60,15 @@ fun EfficiencyLogging(
 
     val rememberCoroutineScope = rememberCoroutineScope()
     val snackbarHost = LocalSnackbarHost.current
+    val context = LocalContext.current
+
 
     DisplayEfficiency(
         isRunning = startPoint.value != null,
         onClick = {
             onStartStopClick(
                 startPoint, state, recentLogs, time,
-                snackbarHost, rememberCoroutineScope
+                snackbarHost, rememberCoroutineScope, context
             )
         },
         recentLogs = recentLogs.value
@@ -76,11 +82,13 @@ private fun onStartStopClick(
     recentLogs: MutableState<List<HistoricalEfficiency>>,
     time: TimeSource,
     snackbar: SnackbarHostState?,
-    snackbarScope: CoroutineScope?
+    snackbarScope: CoroutineScope?,
+    context: Context,
 ) {
+
     startPoint.value?.let { it ->
         startPoint.value = null
-        val odoMi = carState.currentState(signalName = SName.odometerKm)?.kmToMi
+        val odoMi = carState.currentState(signalName = SName.odometer)?.kmToMi
         val disch = carState.currentState(signalName = SName.kwhDischargeTotal)
         if (odoMi != null && disch != null) {
             val dOdo = odoMi - it.odometer
@@ -107,9 +115,14 @@ private fun onStartStopClick(
             snackbarScope?.launch {
                 snackbar?.showSnackbar(newLog.efficiency)
             }
+            GlobalScope.launch {
+                val file: File = File(context.filesDir, "effiency_logs.txt")
+                file.appendText("${newLog.efficiency}, ${newLog.avgSpeed}, ${newLog.mileage}, ${time.markNow()}")
+            }
+
         }
     } ?: run {
-        val odo = carState.currentState(signalName = SName.odometerKm)
+        val odo = carState.currentState(signalName = SName.odometer)?.kmToMi
         val disch = carState.currentState(signalName = SName.kwhDischargeTotal)
         if (odo != null && disch != null) {
             startPoint.value = EfficiencyLog(

@@ -205,7 +205,7 @@ class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableE
     private fun LiveEfficiency() {
         val power = currentState(SName.power)
         val speed = currentState(SName.uiSpeed)
-        if (power != null && speed != null) {
+        if (power != null && speed != null && speed > 0 ) {
             val value = power / speed
             Text("${value.roundToInt()} wh/mi", fontSize = 32.sp)
         }

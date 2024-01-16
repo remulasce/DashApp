@@ -1,6 +1,7 @@
 package app.candash.cluster.compose
 
 import android.content.Context
+import android.os.Parcelable
 import android.util.Log
 import androidx.compose.animation.core.EaseInOutSine
 import androidx.compose.animation.core.RepeatMode
@@ -33,10 +34,13 @@ import app.candash.cluster.R
 import app.candash.cluster.SName
 import app.candash.cluster.compose.ui.theme.TitleLabelTextStyle
 import app.candash.cluster.kmToMi
+import com.github.doyaaaaaken.kotlincsv.dsl.csvWriter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.parcelize.Parcelize
 import java.io.File
+import java.util.Calendar
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.convert
 import kotlin.time.DurationUnit
@@ -75,7 +79,19 @@ fun EfficiencyLogging(
     )
 }
 
-@OptIn(ExperimentalTime::class)
+@Parcelize
+data class LoggedEfficiency(
+    val efficiency: HistoricalEfficiency,
+    val location: Location?,
+) : Parcelable
+
+data class EfficiencyLog(
+    val odometer: Float,
+    val dischargeKwh: Float,
+    val timestamp: TimeMark?,
+    val location: Location?
+)
+
 private fun onStartStopClick(
     startPoint: MutableState<EfficiencyLog?>,
     carState: ComposableCarState,
@@ -85,52 +101,101 @@ private fun onStartStopClick(
     snackbarScope: CoroutineScope?,
     context: Context,
 ) {
-
-    startPoint.value?.let { it ->
-        startPoint.value = null
-        val odoMi = carState.currentState(signalName = SName.odometer)?.kmToMi
-        val disch = carState.currentState(signalName = SName.kwhDischargeTotal)
-        if (odoMi != null && disch != null) {
-            val dOdo = odoMi - it.odometer
-            val dDischKwh = disch - it.dischargeKwh
-            val dTime: Duration? = it.timestamp?.elapsedNow()
-            val avgSpeed: Float? =
-                dTime?.let {
-                    convert(
-                        (dOdo / it.inWholeMilliseconds).toDouble(),
-                        DurationUnit.HOURS, // Reverse conversion, since 'hour' is on divident
-                        DurationUnit.MILLISECONDS
-                    ).toFloat()
-                }
-            val efficiencyWh = dDischKwh / dOdo * 1000
-            val newLog = HistoricalEfficiency(
-                "%.0f wh/mi".format(efficiencyWh),
-                "%.0f mi".format(dOdo),
-                avgSpeed?.let {
-                    "%.0f mph".format(it)
-                }
-            )
-            Log.i("EfficiencyLogger", "New efficiency reading: $newLog")
-            recentLogs.value = listOf(newLog) + recentLogs.value
-            snackbarScope?.launch {
-                snackbar?.showSnackbar(newLog.efficiency)
-            }
-            GlobalScope.launch {
-                val file: File = File(context.filesDir, "effiency_logs.txt")
-                file.appendText("${newLog.efficiency}, ${newLog.avgSpeed}, ${newLog.mileage}, ${time.markNow()}")
-            }
-
-        }
+    startPoint.value?.let {
+        onStopClick(startPoint, carState, it, recentLogs, snackbarScope, snackbar, context, time)
     } ?: run {
-        val odo = carState.currentState(signalName = SName.odometer)?.kmToMi
-        val disch = carState.currentState(signalName = SName.kwhDischargeTotal)
-        if (odo != null && disch != null) {
-            startPoint.value = EfficiencyLog(
-                odo,
-                disch,
-                time.markNow()
-            )
+        onStartClick(carState, startPoint, time)
+    }
+}
+
+private fun onStartClick(
+    carState: ComposableCarState,
+    startPoint: MutableState<EfficiencyLog?>,
+    time: TimeSource
+) {
+    val odo = carState.currentState(signalName = SName.odometer)?.kmToMi
+    val disch = carState.currentState(signalName = SName.kwhDischargeTotal)
+
+    val location = getCarLocation(carState)
+
+    if (odo != null && disch != null) {
+        startPoint.value = EfficiencyLog(
+            odo,
+            disch,
+            time.markNow(),
+            location
+        )
+    }
+}
+
+private fun getCarLocation(carState: ComposableCarState): Location? {
+    val lat = carState.currentState(SName.gpsLatitude)
+    val lon = carState.currentState(SName.gpsLongitude)
+    val location = if (lat != null && lon != null) Location(lat, lon) else null
+    return location
+}
+
+@OptIn(ExperimentalTime::class)
+private fun onStopClick(
+    startPoint: MutableState<EfficiencyLog?>,
+    carState: ComposableCarState,
+    startLog: EfficiencyLog,
+    recentLogs: MutableState<List<HistoricalEfficiency>>,
+    snackbarScope: CoroutineScope?,
+    snackbar: SnackbarHostState?,
+    context: Context,
+    time: TimeSource
+) {
+    startPoint.value = null
+    // New current values
+    val odoMi = carState.currentState(signalName = SName.odometer)?.kmToMi
+    val disch = carState.currentState(signalName = SName.kwhDischargeTotal)
+    val location = getCarLocation(carState)
+
+    // If location is missing that's fine
+    if (odoMi != null && disch != null) {
+        val dOdo = odoMi - startLog.odometer
+        val dDischKwh = disch - startLog.dischargeKwh
+        val dTime: Duration? = startLog.timestamp?.elapsedNow()
+        val avgSpeed: Float? =
+            dTime?.let {
+                convert(
+                    (dOdo / it.inWholeMilliseconds).toDouble(),
+                    DurationUnit.HOURS, // Reverse conversion, since 'hour' is on divident
+                    DurationUnit.MILLISECONDS
+                ).toFloat()
+            }
+        val efficiencyWh = dDischKwh / dOdo * 1000
+        val newLog = HistoricalEfficiency(
+            "%.0f wh/mi".format(efficiencyWh),
+            "%.0f mi".format(dOdo),
+            avgSpeed?.let {
+                "%.0f mph".format(it)
+            }
+        )
+        Log.i("EfficiencyLogger", "New efficiency reading: $newLog")
+
+        recentLogs.value = listOf(newLog) + recentLogs.value
+        snackbarScope?.launch {
+            snackbar?.showSnackbar(newLog.efficiency)
         }
+        GlobalScope.launch {
+            csvWriter().writeAllAsync(
+                listOf(
+                    listOf(
+                        newLog.efficiency,
+                        newLog.avgSpeed,
+                        newLog.mileage,
+                        Calendar.getInstance().time,
+                        startLog.location,
+                        location
+                    )
+                ), File(context.filesDir, "effiency_logs.txt"), append = true
+            )
+            val file: File = File(context.filesDir, "effiency_logs.txt")
+//            file.appendText("${newLog.efficiency}, ${newLog.avgSpeed}, ${newLog.mileage}, ${time.markNow()}, ${newL}")
+        }
+
     }
 }
 
@@ -202,5 +267,3 @@ private fun DisplayEfficiency(
         )
     }
 }
-
-data class EfficiencyLog(val odometer: Float, val dischargeKwh: Float, val timestamp: TimeMark?)

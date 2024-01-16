@@ -69,12 +69,15 @@ fun EfficiencyTable(efficiencies: List<HistoricalEfficiency>, tableTitle: String
 data class HistoricalEfficiency(
     val efficiency: String,
     val mileage: String,
-    val avgSpeed: String?
+    val avgSpeed: String?,
+): Parcelable
+
+@Parcelize
+data class Location(
+    val latitude: Float,
+    val longitude: Float,
 ): Parcelable
 
 val LocalSnackbarHost = compositionLocalOf<SnackbarHostState?> {
     null
-    // defaults
-    //                SnackbarLauncher(snackbarHostState, scope)
-//    snackbarHostState
 }

@@ -44,6 +44,8 @@ object SName {
     const val frunkState: SignalName = "frunkState"
     const val fusedSpeedLimit: SignalName = "fusedSpeedLimit"
     const val gearSelected: SignalName = "GearSelected"
+    const val gpsLatitude: SignalName = "GPSLatitude"
+    const val gpsLongitude: SignalName = "GPSLongitude"
     const val heatBattery: SignalName = "heatBattery"
     const val highBeamRequest: SignalName = "highBeamRequest"
     const val highBeamStatus: SignalName = "highBeamStatus"

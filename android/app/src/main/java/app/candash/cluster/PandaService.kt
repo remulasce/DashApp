@@ -8,10 +8,23 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.util.Log
 import com.google.common.collect.Lists
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.newSingleThreadContext
+import kotlinx.coroutines.yield
 import java.io.Closeable
 import java.io.IOException
-import java.net.*
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.SocketException
+import java.net.SocketTimeoutException
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
@@ -548,6 +561,6 @@ class PandaService(val sharedPreferences: SharedPreferences, val context: Contex
     private fun serverAddress(): InetSocketAddress =
         InetSocketAddress(InetAddress.getByName(ipAddress()), port)
 
-    private fun ipAddress() =
+    fun ipAddress() =
         sharedPreferences.getString(Constants.ipAddressPrefKey, Constants.ipAddressLocalNetwork)
 }

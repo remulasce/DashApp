@@ -17,7 +17,9 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.candash.cluster.compose.ui.theme.TitleLabelTextStyle
 import kotlinx.parcelize.Parcelize
 
@@ -48,6 +50,7 @@ fun EfficiencyTable(efficiencies: List<HistoricalEfficiency>, tableTitle: String
                     ) {
                         Text(
                             it.efficiency,
+                            fontSize = 20.sp,
                             modifier = Modifier.weight(.5f)
                         )
                         Column(
@@ -63,6 +66,18 @@ fun EfficiencyTable(efficiencies: List<HistoricalEfficiency>, tableTitle: String
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun PreviewEfficiency() {
+    EfficiencyTable(
+        listOf(
+            HistoricalEfficiency("23 wh/mi", "23 mi", "91 mph"),
+            HistoricalEfficiency("223 wh/mi", "3 mi", "71 mph")
+            ),
+        "Historical Efficiency"
+    )
 }
 
 @Parcelize

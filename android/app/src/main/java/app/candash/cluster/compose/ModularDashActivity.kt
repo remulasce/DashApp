@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
@@ -28,6 +29,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateListOf
@@ -37,8 +39,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -89,19 +93,34 @@ class ModularDashActivity : ComponentActivity() {
             val scope = rememberCoroutineScope()
             val snackbarHostState = remember { SnackbarHostState() }
             CompositionLocalProvider(LocalSnackbarHost provides snackbarHostState) {
-                CANDashTheme {
-                    // A surface container using the 'background' color from the theme
-                    Scaffold(
-                        modifier = Modifier.fillMaxSize(),
-                        snackbarHost = {
-                            SnackbarHost(hostState = snackbarHostState)
-                        }
-                    ) { padding ->
-                        Box(Modifier.padding(padding)) {
-                            ComposeScope(
-                                viewModel.liveCarState.createComposableCarStateFromLiveData(),
-                                efficiency.toState()
-                            ).MainLayout3Cols()
+                val segmentEfficiencyState: SegmentEfficiency =
+                    SegmentEfficiency(mutableStateOf(null))
+                CompositionLocalProvider(segmentEfficiencyLocal provides segmentEfficiencyState) {
+                    CANDashTheme {
+                        // A surface container using the 'background' color from the theme
+                        Scaffold(
+                            modifier = Modifier.fillMaxSize(),
+                            snackbarHost = {
+                                SnackbarHost(
+                                    hostState = snackbarHostState
+                                ) { data ->
+                                    Snackbar(shape = RectangleShape) {
+                                        Text(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            text = data.visuals.message,
+                                            fontSize = 24.sp,
+                                            textAlign = TextAlign.Center,
+                                        )
+                                    }
+                                }
+                            }
+                        ) { padding ->
+                            Box(Modifier.padding(padding)) {
+                                ComposeScope(
+                                    viewModel.liveCarState.createComposableCarStateFromLiveData(),
+                                    efficiency.toState()
+                                ).MainLayout3Cols()
+                            }
                         }
                     }
                 }
@@ -109,6 +128,14 @@ class ModularDashActivity : ComponentActivity() {
         }
     }
 }
+
+val segmentEfficiencyLocal = compositionLocalOf {
+    SegmentEfficiency(
+        mutableStateOf(null)
+    )
+}
+
+data class SegmentEfficiency(val efficiency: MutableState<String?>)
 
 typealias ComposableCarState = Map<String, State<SignalState?>>
 
@@ -261,6 +288,12 @@ class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableE
             Text("Live Values", style = TitleLabelTextStyle())
             Speed()
             LiveEfficiency()
+            segmentEfficiencyLocal.current.efficiency.value?.let {
+                Text(
+                    text = it,
+                    fontSize = 30.sp
+                )
+            }
         }
     }
 
@@ -271,17 +304,24 @@ class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableE
         val speed = currentState(SName.uiSpeed)
         if (power != null && speed != null && speed != 0f) {
             val value = power / speed
-            Text("${value.roundToInt()} wh/mi", fontSize = 32.sp)
+            Text("${value.roundToInt()} wh/mi", fontSize = 34.sp)
         }
     }
 
     @Composable
     private fun Speed() {
-        val uiSpeed = "%.0f".format(currentState(SName.uiSpeed))
-        val speedUnits = "mph"
+        val fontSize = 52.sp
+        currentState(SName.uiSpeed).let {
+            if (it == null) {
+                Text(text = "---", fontSize = fontSize)
+            } else {
+                val uiSpeed = "%.0f".format(it)
+                val speedUnits = "mph"
 
-        val speed = "$uiSpeed $speedUnits"
-        Text(text = speed, fontSize = 48.sp)
+                val speed = "$uiSpeed $speedUnits"
+                Text(text = speed, fontSize = fontSize)
+            }
+        }
     }
 
 
@@ -332,7 +372,8 @@ class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableE
 
             Text("Currently $string")
             Switch(
-                checked = (logging > 0), onCheckedChange = {}, enabled = false)
+                checked = (logging > 0), onCheckedChange = {}, enabled = false
+            )
         }
     }
 

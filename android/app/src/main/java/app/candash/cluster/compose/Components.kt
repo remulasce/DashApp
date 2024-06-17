@@ -89,7 +89,4 @@ data class HistoricalEfficiency(
 
 val LocalSnackbarHost = compositionLocalOf<SnackbarHostState?> {
     null
-    // defaults
-    //                SnackbarLauncher(snackbarHostState, scope)
-//    snackbarHostState
 }

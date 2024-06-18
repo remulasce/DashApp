@@ -17,8 +17,10 @@ class EfficiencyCalculator(
     private val tripleFloatListType =
         object : TypeToken<MutableList<Triple<Float, Float, Float>>>() {}.type
 
+    private val inMilesSetting = false // prefs.getBooleanPref(Constants.uiSpeedUnitsMPH)
+
     fun changeLookBack(): String {
-        val inMiles = prefs.getBooleanPref(Constants.uiSpeedUnitsMPH)
+        val inMiles = inMilesSetting
         val old = prefs.getPref(Constants.efficiencyLookBack)
         val options = if (inMiles) {
             listOf(0f, 1f.miToKm, 5f.miToKm, 15f.miToKm, 30f.miToKm)
@@ -42,7 +44,7 @@ class EfficiencyCalculator(
     }
 
     fun getEfficiencyText(lookBackKm: Float = prefs.getPref(Constants.efficiencyLookBack)): String {
-        val inMiles = prefs.getBooleanPref(Constants.uiSpeedUnitsMPH)
+        val inMiles = inMilesSetting
         val power = carState[SName.power] ?: 0f
         return if (lookBackKm == 0f) {
             getInstantEfficiencyText(inMiles, power)

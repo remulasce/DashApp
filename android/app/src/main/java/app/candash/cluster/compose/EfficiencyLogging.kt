@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -68,9 +69,9 @@ fun EfficiencyLogging(
 
     val isRunning = startPoint.value != null
 
+    val segmentEfficiencyState = segmentEfficiencyLocal.current.efficiency
     if (isRunning) {
-        val segmentEfficiencyState = segmentEfficiencyLocal.current.efficiency
-        LaunchedEffect(segmentEfficiencyLocal) {
+        LaunchedEffect(LocalLifecycleOwner.current) {
             while (true) {
                 Log.v("EfficiencyLogging", "Occasionally recalculating segment efficiency")
                 val odoMi = state.currentState(signalName = SName.odometer)?.kmToMi
@@ -85,6 +86,8 @@ fun EfficiencyLogging(
                 delay(100)
             }
         }
+    } else {
+        segmentEfficiencyState.value = null
     }
 
     DisplayEfficiency(

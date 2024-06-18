@@ -63,6 +63,7 @@ import app.candash.cluster.compose.ComposeScope.Companion.createComposableCarSta
 import app.candash.cluster.compose.ComposeScope.Companion.toState
 import app.candash.cluster.compose.ui.theme.CANDashTheme
 import app.candash.cluster.compose.ui.theme.TitleLabelTextStyle
+import app.candash.cluster.miToKm
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -176,10 +177,10 @@ class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableE
                     Log.v("EffToState", "Recomposing efficiency occasionally")
                     this@toState.updateKwhHistory()
                     val newEfficiency = mutableListOf<HistoricalEfficiency>()
-                    listOf(1f, 5f, 10f).forEach {
+                    listOf(0.5f, 1f, 5f).forEach {
                         newEfficiency.add(
                             HistoricalEfficiency(
-                                this@toState.getEfficiencyText(it),
+                                this@toState.getEfficiencyText(it.miToKm),
                                 "$it mi",
                                 null
                             )

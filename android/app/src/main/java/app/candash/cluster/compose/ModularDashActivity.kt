@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,6 +25,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +38,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,6 +71,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 import kotlin.time.TimeSource
 
 @AndroidEntryPoint
@@ -94,8 +98,8 @@ class ModularDashActivity : ComponentActivity() {
             val scope = rememberCoroutineScope()
             val snackbarHostState = remember { SnackbarHostState() }
             CompositionLocalProvider(LocalSnackbarHost provides snackbarHostState) {
-                val segmentEfficiencyState: SegmentEfficiency =
-                    SegmentEfficiency(mutableStateOf(null))
+                val segmentEfficiencyState =
+                    SegmentEfficiency(mutableStateOf(null), mutableStateOf(null), mutableStateOf(null))
                 CompositionLocalProvider(segmentEfficiencyLocal provides segmentEfficiencyState) {
                     CANDashTheme {
                         // A surface container using the 'background' color from the theme
@@ -132,11 +136,17 @@ class ModularDashActivity : ComponentActivity() {
 
 val segmentEfficiencyLocal = compositionLocalOf {
     SegmentEfficiency(
+        mutableStateOf(null),
+        mutableStateOf(null),
         mutableStateOf(null)
     )
 }
 
-data class SegmentEfficiency(val efficiency: MutableState<String?>)
+data class SegmentEfficiency(
+    val efficiency: MutableState<String?> = mutableStateOf(null),
+    val airspeed: MutableState<String?> = mutableStateOf(null),
+    val rootMeanSquareAirspeed: MutableState<Float?> = mutableStateOf(null)
+)
 
 typealias ComposableCarState = Map<String, State<SignalState?>>
 
@@ -219,16 +229,60 @@ class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableE
                         .fillMaxWidth(.9f),
                     contentAlignment = Alignment.TopCenter
                 ) {
-                    EfficiencyTable(
-                        efficiencies = efficiency,
-                        "Recent Efficiency"
-                    )
+//                    EfficiencyTable(
+//                        efficiencies = efficiency,
+//                        "Recent Efficiency"
+//                    )
+                    ExtendedValues()
                 }
                 Box(modifier = Modifier.weight(.5f), contentAlignment = Alignment.TopCenter) {
                     Logging()
                 }
             }
         }
+    }
+
+    @Composable
+    private fun ExtendedValues() {
+        Column(
+            Modifier.width(IntrinsicSize.Max),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text("Extended Values", style = TitleLabelTextStyle())
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    "${currentState(SName.airSpeedMph)} mph",
+                    fontSize = 32.sp,
+                    modifier = Modifier.weight(.5f)
+                )
+                Text(
+                    "${currentState(SName.airPressure)} raw",
+                    fontSize = 32.sp,
+                    modifier = Modifier.weight(.5f)
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                var input by rememberSaveable { mutableStateOf("36.8") }
+                TextField(
+                    value = input,
+                    modifier = Modifier.weight(.5f),
+                    onValueChange = { newText ->
+                        input = newText.toFloatOrNull().toString()
+                    }
+
+                )
+                val pressure = currentState(SName.airPressure) ?: 0f
+                val correctedMph = sqrt(pressure * input.toFloat())
+                Text(
+                    "$correctedMph mph",
+                    fontSize = 32.sp,
+                    modifier = Modifier.weight(.5f)
+                )
+            }
+        }
+//            LiveEfficiency()
+
     }
 
     @Composable
@@ -239,7 +293,15 @@ class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableE
         ) {
             Connection()
             Power()
+            CustomSignals()
         }
+    }
+
+    @Composable
+    private fun CustomSignals() {
+        Text(carState.currentState(SName.airTempKelv).toString())
+        Text(carState.currentState(SName.airSpeedMph).toString())
+        Text(carState.currentState(SName.airPressure).toString())
     }
 
     @Composable
@@ -288,16 +350,21 @@ class ComposeScope(val carState: ComposableCarState, val efficiency: ComposableE
         ) {
             Text("Live Values", style = TitleLabelTextStyle())
             Speed()
-            LiveEfficiency()
+//            LiveEfficiency()
             segmentEfficiencyLocal.current.efficiency.value?.let {
                 Text(
-                    text = it,
+                    text = "(s) $it",
+                    fontSize = 30.sp
+                )
+            } ?: LiveEfficiency() // Segment logging replaces
+            segmentEfficiencyLocal.current.airspeed.value?.let {
+                Text(
+                    text = "(s) $it",
                     fontSize = 30.sp
                 )
             }
         }
     }
-
 
     @Composable
     private fun LiveEfficiency() {

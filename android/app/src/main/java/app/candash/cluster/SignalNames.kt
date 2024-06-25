@@ -104,6 +104,12 @@ object SName {
     const val canServerAck: SignalName = "CANServer_Ehllo_Ack"
     const val canServerPandaConnection: SignalName = "CANServer_PandaConnection"
     const val canServerLoggingStatus: SignalName = "CANServer_LoggingStatus"
+
+    // Custom logging signals:
+    const val customTest: SignalName = "CustomTest"
+    const val airSpeedMph: SignalName = "AirspeedMph"
+    const val airPressure: SignalName = "AirPressure"
+    const val airTempKelv: SignalName = "AirTempKelv"
 }
 
 object SGroup {

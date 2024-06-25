@@ -223,6 +223,13 @@ class CANSignalHelper(val sharedPreferences: SharedPreferences) {
 
         insertCANSignal(SName.canServerPandaConnection, Constants.canServerBus, Hex(0x503), 0, 1, 1f, 0f)
         insertCANSignal(SName.canServerLoggingStatus, Constants.canServerBus, Hex(0x502), 0, 3, 1f, -1f)
+        insertCANSignal(SName.customTest, Constants.anyBus, Hex(0x50A), 0, 8, 1f, 0f)
+
+        insertCANSignal(SName.airTempKelv, Constants.anyBus, Hex(0x50A), 0, 16, 1f, 0f, signed = true)
+        insertCANSignal(SName.airSpeedMph, Constants.anyBus, Hex(0x50A), 16, 16, 1f, 0f, signed = true)
+        insertCANSignal(SName.airPressure, Constants.anyBus, Hex(0x50A), 32, 16, 1f, 0f, signed = true)
+
+
 
         // Create augmented signals
         insertAugmentedCANSignal(SName.smoothBattAmps, listOf(SName.battAmps)) {

@@ -42,6 +42,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
+import kotlin.math.sqrt
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.convert
 import kotlin.time.DurationUnit
@@ -69,7 +70,10 @@ fun EfficiencyLogging(
 
     val isRunning = startPoint.value != null
 
-    val segmentEfficiencyState = segmentEfficiencyLocal.current.efficiency
+    val segmentEfficiency = segmentEfficiencyLocal.current
+    val segmentEfficiencyState = segmentEfficiency.efficiency
+    val segmentAirspeedState = segmentEfficiency.airspeed
+    val segmentRootMeanSquareAirspeed = segmentEfficiency.rootMeanSquareAirspeed
     if (isRunning) {
         LaunchedEffect(LocalLifecycleOwner.current) {
             while (true) {
@@ -78,7 +82,7 @@ fun EfficiencyLogging(
                 val disch = state.currentState(signalName = SName.kwhDischargeTotal)
                 val startPointLog = startPoint.value
                 if (odoMi != null && disch != null && startPointLog != null) {
-                    val newLog = calculateSegmentEfficiency(odoMi, startPointLog, disch)
+                    val newLog = calculateSegmentEfficiencyByOdometer(odoMi, startPointLog, disch)
                     segmentEfficiencyState.value = newLog.efficiency
                 } else {
                     segmentEfficiencyState.value = "test off "
@@ -86,15 +90,36 @@ fun EfficiencyLogging(
                 delay(100)
             }
         }
+        LaunchedEffect(LocalLifecycleOwner.current) {
+            var recordedSpeedSum = 0;
+            var recordedSpeedSquaredSum = 0;
+            var recordedSpeedNum = 0;
+
+            while (true) {
+                Log.v("EfficiencyLogging", "Occasionally recalculating segment airspeed")
+                val airspeed = state.currentState(signalName = SName.airSpeedMph)?.toInt()
+                if (airspeed != null) {
+                    recordedSpeedSum += airspeed;
+                    recordedSpeedSquaredSum += airspeed * airspeed
+                    recordedSpeedNum++;
+
+                    segmentAirspeedState.value = "${recordedSpeedSum / recordedSpeedNum} airmph"
+                    segmentRootMeanSquareAirspeed.value =
+                        sqrt(recordedSpeedSquaredSum / recordedSpeedNum.toFloat())
+                }
+                delay(500) // TODO: Shouldn't assume it has been a constant time between runs.
+            }
+        }
     } else {
         segmentEfficiencyState.value = null
+        segmentAirspeedState.value = null
     }
 
     DisplayEfficiency(
         isRunning = isRunning,
         onClick = {
             onStartStopClick(
-                startPoint, state, recentLogs, time,
+                startPoint, state, recentLogs, segmentEfficiency, time,
                 snackbarHost, rememberCoroutineScope, context
             )
         },
@@ -102,11 +127,11 @@ fun EfficiencyLogging(
     )
 }
 
-@OptIn(ExperimentalTime::class)
 private fun onStartStopClick(
     startPoint: MutableState<EfficiencyLog?>,
     carState: ComposableCarState,
     recentLogs: MutableState<List<HistoricalEfficiency>>,
+    segmentEfficiency: SegmentEfficiency,
     time: TimeSource,
     snackbar: SnackbarHostState?,
     snackbarScope: CoroutineScope?,
@@ -114,10 +139,12 @@ private fun onStartStopClick(
 ) {
     startPoint.value?.let { it ->
         startPoint.value = null
+        val averageAirSpeed = segmentEfficiency.rootMeanSquareAirspeed.value!!
         val odoMi = carState.currentState(signalName = SName.odometer)?.kmToMi
         val disch = carState.currentState(signalName = SName.kwhDischargeTotal)
         if (odoMi != null && disch != null) {
-            val newLog = calculateSegmentEfficiency(odoMi, it, disch)
+//            val newLog = calculateSegmentEfficiencyByOdometer(odoMi, it, disch)
+            val newLog = calculateSegmentEfficiencyByAirspeed(odoMi, averageAirSpeed, it, disch)
             Log.i("EfficiencyLogger", "New efficiency reading: $newLog")
             recentLogs.value = listOf(newLog) + recentLogs.value
             snackbarScope?.launch {
@@ -143,13 +170,13 @@ private fun onStartStopClick(
 }
 
 @OptIn(ExperimentalTime::class)
-private fun calculateSegmentEfficiency(
+private fun calculateSegmentEfficiencyByOdometer(
     odoMi: Float,
     efficiencyLog: EfficiencyLog,
-    disch: Float
+    currDisch: Float
 ): HistoricalEfficiency {
     val dOdo = odoMi - efficiencyLog.odometer
-    val dDischKwh = disch - efficiencyLog.dischargeKwh
+    val dDischKwh = currDisch - efficiencyLog.dischargeKwh
     val dTime: Duration? = efficiencyLog.timestamp?.elapsedNow()
     val avgSpeed: Float? =
         dTime?.let {
@@ -164,6 +191,30 @@ private fun calculateSegmentEfficiency(
         "%.0f wh/mi".format(efficiencyWh),
         "%.0f mi".format(dOdo),
         avgSpeed?.let {
+            "%.0f mph".format(it)
+        }
+    )
+    return newLog
+}
+
+@OptIn(ExperimentalTime::class)
+private fun calculateSegmentEfficiencyByAirspeed(
+    odoMi: Float,
+    averageAirSpeed: Float,
+    efficiencyLog: EfficiencyLog,
+    currDisch: Float
+): HistoricalEfficiency {
+    val dOdo = odoMi - efficiencyLog.odometer
+    val dDischKwh = currDisch - efficiencyLog.dischargeKwh
+    val dTimeMs = efficiencyLog.timestamp!!.elapsedNow().inWholeMilliseconds
+    val rawDistanceMs: Double = averageAirSpeed.toDouble() * dTimeMs
+    val dInferredDistanceMiles: Double =
+        convert(rawDistanceMs, DurationUnit.MILLISECONDS, DurationUnit.HOURS)
+    val efficiencyWh = dDischKwh / dInferredDistanceMiles * 1000
+    val newLog = HistoricalEfficiency(
+        "%.0f wh/mi".format(efficiencyWh),
+        "%.0f mi".format(dInferredDistanceMiles),
+        averageAirSpeed.let {
             "%.0f mph".format(it)
         }
     )

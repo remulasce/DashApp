@@ -3,6 +3,7 @@ package app.candash.cluster
 import android.content.SharedPreferences
 import android.util.Log
 import java.lang.Float.max
+import kotlin.math.sqrt
 
 class CANSignalHelper(val sharedPreferences: SharedPreferences) {
     private val TAG = CANSignalHelper::class.java.simpleName
@@ -14,7 +15,8 @@ class CANSignalHelper(val sharedPreferences: SharedPreferences) {
     }
 
     private val nameToSignal = HashMap<String, CANSignal>()
-    private val busToFrameToSignal: MutableMap<Int, MutableMap<Hex, MutableList<CANSignal>>>  = mutableMapOf()
+    private val busToFrameToSignal: MutableMap<Int, MutableMap<Hex, MutableList<CANSignal>>> =
+        mutableMapOf()
     private val nameToAugSignal: MutableMap<String, AugmentedCANSignal> = mutableMapOf()
     private val augSigDepToName: MutableMap<String, MutableSet<String>> = mutableMapOf()
 
@@ -67,9 +69,9 @@ class CANSignalHelper(val sharedPreferences: SharedPreferences) {
         return nameToSignal.keys.toList()
     }
 
-    fun getSignalsForFrame(bus: Int, frame: Hex) : List<CANSignal> {
+    fun getSignalsForFrame(bus: Int, frame: Hex): List<CANSignal> {
         // Specific bus should take precedence
-        if (busToFrameToSignal[bus]?.containsKey(frame) == true){
+        if (busToFrameToSignal[bus]?.containsKey(frame) == true) {
             return busToFrameToSignal[bus]?.get(frame) ?: listOf()
         }
         // Otherwise try the "anyBus" (-1) map
@@ -125,111 +127,487 @@ class CANSignalHelper(val sharedPreferences: SharedPreferences) {
     private fun createCANSignals() {
         // Technically uSOE (usable State Of Energy), this better matches what the car shows.
         insertCANSignal(SName.stateOfCharge, Constants.vehicleBus, Hex(0x33A), 56, 7, 1f, 0f)
-        insertCANSignal(SName.nominalFullPackEnergy, Constants.vehicleBus, Hex(0x352), 16, 16, 0.02f, 0f, 2, 0, sna = 1310.7f)
+        insertCANSignal(
+            SName.nominalFullPackEnergy,
+            Constants.vehicleBus,
+            Hex(0x352),
+            16,
+            16,
+            0.02f,
+            0f,
+            2,
+            0,
+            sna = 1310.7f
+        )
         insertCANSignal(SName.battVolts, Constants.vehicleBus, Hex(0x132), 0, 16, 0.01f, 0f)
-        insertCANSignal(SName.battAmps, Constants.vehicleBus, Hex(0x132), 16, 16, -.1f, 0f, signed=true, sna=3276.7f)
+        insertCANSignal(
+            SName.battAmps,
+            Constants.vehicleBus,
+            Hex(0x132),
+            16,
+            16,
+            -.1f,
+            0f,
+            signed = true,
+            sna = 3276.7f
+        )
 
         insertCANSignal(SName.dc12vVolts, Constants.vehicleBus, Hex(0x2B4), 0, 13, 0.01f, 0f)
         insertCANSignal(SName.dc12vAmps, Constants.vehicleBus, Hex(0x2B4), 32, 13, 0.1f, 0f)
 
-        insertCANSignal(SName.uiSpeed, Constants.vehicleBus, Hex(0x257), 24, 9, 1f, 0f, sna=511f)
+        insertCANSignal(SName.uiSpeed, Constants.vehicleBus, Hex(0x257), 24, 9, 1f, 0f, sna = 511f)
         //insertCANSignal(SName.uiSpeedHighSpeed, Constants.vehicleBus, Hex(0x257), 34, 9, 1f, 0f)
-        insertCANSignal(SName.fusedSpeedLimit, Constants.chassisBus, Hex(0x399), 8, 5, 5f, 0f, sna=0f)
+        insertCANSignal(
+            SName.fusedSpeedLimit,
+            Constants.chassisBus,
+            Hex(0x399),
+            8,
+            5,
+            5f,
+            0f,
+            sna = 0f
+        )
         insertCANSignal(SName.uiSpeedUnits, Constants.vehicleBus, Hex(0x257), 33, 1, 1f, 0f)
-        insertCANSignal(SName.blindSpotLeft, Constants.chassisBus, Hex(0x399), 4, 2, 1f, 0f, sna=3f)
-        insertCANSignal(SName.blindSpotRight, Constants.chassisBus, Hex(0x399), 6, 2, 1f, 0f, sna=3f)
-        insertCANSignal(SName.forwardCollisionWarning, Constants.chassisBus, Hex(0x449), 3, 1, 1f, 0f)
+        insertCANSignal(
+            SName.blindSpotLeft,
+            Constants.chassisBus,
+            Hex(0x399),
+            4,
+            2,
+            1f,
+            0f,
+            sna = 3f
+        )
+        insertCANSignal(
+            SName.blindSpotRight,
+            Constants.chassisBus,
+            Hex(0x399),
+            6,
+            2,
+            1f,
+            0f,
+            sna = 3f
+        )
+        insertCANSignal(
+            SName.forwardCollisionWarning,
+            Constants.chassisBus,
+            Hex(0x449),
+            3,
+            1,
+            1f,
+            0f
+        )
         //insertCANSignal(SName.displayBrightnessLev, Constants.vehicleBus, Hex(0x273), 32, 8, .5f, 0)
         insertCANSignal(SName.uiRange, Constants.vehicleBus, Hex(0x33A), 0, 10, 1f, 0f)
         insertCANSignal(SName.turnSignalLeft, Constants.vehicleBus, Hex(0x3F5), 0, 2, 1f, 0f)
         insertCANSignal(SName.turnSignalRight, Constants.vehicleBus, Hex(0x3F5), 2, 2, 1f, 0f)
 
         // Lights updated for 2022.44.25
-        insertCANSignal(SName.lightingState, Constants.vehicleBus, Hex(0x3F5), 32, 4, 1f, 0f, sna=15f)
-        insertCANSignal(SName.lightSwitch, Constants.vehicleBus, Hex(0x3B3), 9, 3, 1f, 0f, sna=4f)
+        insertCANSignal(
+            SName.lightingState,
+            Constants.vehicleBus,
+            Hex(0x3F5),
+            32,
+            4,
+            1f,
+            0f,
+            sna = 15f
+        )
+        insertCANSignal(SName.lightSwitch, Constants.vehicleBus, Hex(0x3B3), 9, 3, 1f, 0f, sna = 4f)
         insertCANSignal(SName.highBeamRequest, Constants.vehicleBus, Hex(0x3F5), 28, 2, 1f, 0f)
         insertCANSignal(SName.autoHighBeamEnabled, Constants.vehicleBus, Hex(0x273), 41, 1, 1f, 0f)
-        insertCANSignal(SName.highBeamStatus, Constants.vehicleBus, Hex(0x3F6), 4, 2, 1f, 0f, sna=3f)
+        insertCANSignal(
+            SName.highBeamStatus,
+            Constants.vehicleBus,
+            Hex(0x3F6),
+            4,
+            2,
+            1f,
+            0f,
+            sna = 3f
+        )
         insertCANSignal(SName.frontFogStatus, Constants.vehicleBus, Hex(0x3F5), 38, 1, 1f, 0f)
-        insertCANSignal(SName.rearFogStatus, Constants.vehicleBus, Hex(0x3E3), 8, 2, 1f, 0f, sna=3f)
+        insertCANSignal(
+            SName.rearFogStatus,
+            Constants.vehicleBus,
+            Hex(0x3E3),
+            8,
+            2,
+            1f,
+            0f,
+            sna = 3f
+        )
         insertCANSignal(SName.courtesyLightRequest, Constants.vehicleBus, Hex(0x3F5), 24, 1, 1f, 0f)
 
-        insertCANSignal(SName.isSunUp, Constants.anyBus, Hex(0x2D3), 25, 2, 1f, 0f, sna=3f)
+        insertCANSignal(SName.isSunUp, Constants.anyBus, Hex(0x2D3), 25, 2, 1f, 0f, sna = 3f)
         //insertCANSignal(SName.rearLeftVehicle, Constants.chassisBus, Hex(0x22E), 36, 9, 1f, 0f)
         //insertCANSignal(SName.rearRightVehicle, Constants.chassisBus, Hex(0x22E), 9, 9, 1f, 0f)
-        insertCANSignal(SName.leftVehicle, Constants.chassisBus, Hex(0x22E), 45, 9, 1f, 0f, sna=511f)
-        insertCANSignal(SName.rightVehicle, Constants.chassisBus, Hex(0x22E), 0, 9, 1f, 0f, sna=511f)
-        insertCANSignal(SName.autopilotState, Constants.chassisBus, Hex(0x399), 0, 4, 1f, 0f, sna=15f)
-        insertCANSignal(SName.autopilotHands, Constants.chassisBus, Hex(0x399), 42, 4, 1f, 0f, sna=15f)
+        insertCANSignal(
+            SName.leftVehicle,
+            Constants.chassisBus,
+            Hex(0x22E),
+            45,
+            9,
+            1f,
+            0f,
+            sna = 511f
+        )
+        insertCANSignal(
+            SName.rightVehicle,
+            Constants.chassisBus,
+            Hex(0x22E),
+            0,
+            9,
+            1f,
+            0f,
+            sna = 511f
+        )
+        insertCANSignal(
+            SName.autopilotState,
+            Constants.chassisBus,
+            Hex(0x399),
+            0,
+            4,
+            1f,
+            0f,
+            sna = 15f
+        )
+        insertCANSignal(
+            SName.autopilotHands,
+            Constants.chassisBus,
+            Hex(0x399),
+            42,
+            4,
+            1f,
+            0f,
+            sna = 15f
+        )
         // These don't exist anymore. 0x368 is absent on chassis bus, and is something different on vehicle bus:
         //insertCANSignal(SName.cruiseControlSpeed, Constants.chassisBus, Hex(0x368), 32, 9, .5f, 0f)
         //insertCANSignal(SName.maxSpeedAP, Constants.chassisBus, Hex(0x368), 32, 9, .5f, 0f)
         // This shows SNA when TACC is active, but we want to see that, so we don't set the sna param:
         insertCANSignal(SName.accSpeedLimit, Constants.chassisBus, Hex(0x389), 0, 10, 0.2f, 0f)
-        insertCANSignal(SName.accState, Constants.chassisBus, Hex(0x2B9), 12, 4, 1f, 0f, sna=15f)
-        insertCANSignal(SName.liftgateState, Constants.vehicleBus, Hex(0x103), 56, 4, 1f, 0f, sna=0f)
-        insertCANSignal(SName.frunkState, Constants.vehicleBus, Hex(0x2E1), 3, 4, 1f, 0f, 3, 0, sna=0f)
+        insertCANSignal(SName.accState, Constants.chassisBus, Hex(0x2B9), 12, 4, 1f, 0f, sna = 15f)
+        insertCANSignal(
+            SName.liftgateState,
+            Constants.vehicleBus,
+            Hex(0x103),
+            56,
+            4,
+            1f,
+            0f,
+            sna = 0f
+        )
+        insertCANSignal(
+            SName.frunkState,
+            Constants.vehicleBus,
+            Hex(0x2E1),
+            3,
+            4,
+            1f,
+            0f,
+            3,
+            0,
+            sna = 0f
+        )
         //insertCANSignal(SName.conditionalSpeedLimit, Constants.chassisBus, Hex(0x3D9), 56, 5, 5f, 0f)
         //insertCANSignal(SName.solarAngle, Constants.chassisBus, Hex(0x2D3), 32, 8, 1f, 0, signed = true)
-        insertCANSignal(SName.gearSelected, Constants.vehicleBus, Hex(0x118), 21, 3, 1f, 0f, sna=7f)
-        insertCANSignal(SName.frontLeftDoorState, Constants.vehicleBus, Hex(0x102), 0, 4, 1f, 0f, sna=0f)
-        insertCANSignal(SName.frontRightDoorState, Constants.vehicleBus, Hex(0x103), 0, 4, 1f, 0f, sna=0f)
-        insertCANSignal(SName.rearLeftDoorState, Constants.vehicleBus, Hex(0x102), 4, 4, 1f, 0f, sna=0f)
-        insertCANSignal(SName.rearRightDoorState, Constants.vehicleBus, Hex(0x103), 4, 4, 1f, 0f, sna=0f)
+        insertCANSignal(
+            SName.gearSelected,
+            Constants.vehicleBus,
+            Hex(0x118),
+            21,
+            3,
+            1f,
+            0f,
+            sna = 7f
+        )
+        insertCANSignal(
+            SName.frontLeftDoorState,
+            Constants.vehicleBus,
+            Hex(0x102),
+            0,
+            4,
+            1f,
+            0f,
+            sna = 0f
+        )
+        insertCANSignal(
+            SName.frontRightDoorState,
+            Constants.vehicleBus,
+            Hex(0x103),
+            0,
+            4,
+            1f,
+            0f,
+            sna = 0f
+        )
+        insertCANSignal(
+            SName.rearLeftDoorState,
+            Constants.vehicleBus,
+            Hex(0x102),
+            4,
+            4,
+            1f,
+            0f,
+            sna = 0f
+        )
+        insertCANSignal(
+            SName.rearRightDoorState,
+            Constants.vehicleBus,
+            Hex(0x103),
+            4,
+            4,
+            1f,
+            0f,
+            sna = 0f
+        )
         insertCANSignal(SName.steeringAngle, Constants.vehicleBus, Hex(0x129), 16, 14, .1f, -819.2f)
-        insertCANSignal(SName.frontTorque, Constants.vehicleBus, Hex(0x1D5), 21, 13, .222f, 0f, signed = true)
-        insertCANSignal(SName.rearTorque, Constants.vehicleBus, Hex(0x1D8), 21, 13, .222f, 0f, signed = true)
-        insertCANSignal(SName.battBrickMin, Constants.vehicleBus, Hex(0x332), 24, 8, .5f, -40f, 2, 0)
+        insertCANSignal(
+            SName.frontTorque,
+            Constants.vehicleBus,
+            Hex(0x1D5),
+            21,
+            13,
+            .222f,
+            0f,
+            signed = true
+        )
+        insertCANSignal(
+            SName.rearTorque,
+            Constants.vehicleBus,
+            Hex(0x1D8),
+            21,
+            13,
+            .222f,
+            0f,
+            signed = true
+        )
+        insertCANSignal(
+            SName.battBrickMin,
+            Constants.vehicleBus,
+            Hex(0x332),
+            24,
+            8,
+            .5f,
+            -40f,
+            2,
+            0
+        )
         insertCANSignal(SName.driveConfig, Constants.vehicleBus, Hex(0x7FF), 56, 4, 1f, 0f, 8, 1)
         insertCANSignal(SName.mapRegion, Constants.vehicleBus, Hex(0x7FF), 8, 4, 1f, 0f, 8, 3)
-        insertCANSignal(SName.driverOrientation, Constants.vehicleBus, Hex(0x211), 40, 3, 1f, 0f, sna=7f)
+        insertCANSignal(
+            SName.driverOrientation,
+            Constants.vehicleBus,
+            Hex(0x211),
+            40,
+            3,
+            1f,
+            0f,
+            sna = 7f
+        )
         insertCANSignal(SName.frontTemp, Constants.vehicleBus, Hex(0x396), 24, 8, 1f, -40f)
         insertCANSignal(SName.rearTemp, Constants.vehicleBus, Hex(0x395), 24, 8, 1f, -40f)
         insertCANSignal(SName.coolantFlow, Constants.vehicleBus, Hex(0x241), 22, 9, .1f, 0f)
         insertCANSignal(SName.chargeStatus, Constants.vehicleBus, Hex(0x212), 29, 1, 1f, 0f)
-        insertCANSignal(SName.brakeTempFL, Constants.vehicleBus, Hex(0x3FE), 12, 10, 1f, -40f, sna=983f)
-        insertCANSignal(SName.brakeTempFR, Constants.vehicleBus, Hex(0x3FE), 22, 10, 1f, -40f, sna=983f)
-        insertCANSignal(SName.brakeTempRL, Constants.vehicleBus, Hex(0x3FE), 32, 10, 1f, -40f, sna=983f)
-        insertCANSignal(SName.brakeTempRR, Constants.vehicleBus, Hex(0x3FE), 42, 10, 1f, -40f, sna=983f)
+        insertCANSignal(
+            SName.brakeTempFL,
+            Constants.vehicleBus,
+            Hex(0x3FE),
+            12,
+            10,
+            1f,
+            -40f,
+            sna = 983f
+        )
+        insertCANSignal(
+            SName.brakeTempFR,
+            Constants.vehicleBus,
+            Hex(0x3FE),
+            22,
+            10,
+            1f,
+            -40f,
+            sna = 983f
+        )
+        insertCANSignal(
+            SName.brakeTempRL,
+            Constants.vehicleBus,
+            Hex(0x3FE),
+            32,
+            10,
+            1f,
+            -40f,
+            sna = 983f
+        )
+        insertCANSignal(
+            SName.brakeTempRR,
+            Constants.vehicleBus,
+            Hex(0x3FE),
+            42,
+            10,
+            1f,
+            -40f,
+            sna = 983f
+        )
         insertCANSignal(SName.displayOn, Constants.vehicleBus, Hex(0x353), 5, 1, 1f, 0f)
         insertCANSignal(SName.keepClimateReq, Constants.vehicleBus, Hex(0x2F3), 33, 2, 1f, 0f)
         insertCANSignal(SName.outsideTemp, Constants.vehicleBus, Hex(0x321), 40, 8, 0.5f, -40f)
-        insertCANSignal(SName.insideTemp, Constants.vehicleBus, Hex(0x243), 30, 11, 0.1f, -40f, 2, 0)
+        insertCANSignal(
+            SName.insideTemp,
+            Constants.vehicleBus,
+            Hex(0x243),
+            30,
+            11,
+            0.1f,
+            -40f,
+            2,
+            0
+        )
         insertCANSignal(SName.insideTempReq, Constants.vehicleBus, Hex(0x2F3), 0, 5, 0.5f, 15f)
         insertCANSignal(SName.hvacAirDistribution, Constants.vehicleBus, Hex(0x2F3), 13, 3, 1f, 0f)
         insertCANSignal(SName.lockStatus, Constants.vehicleBus, Hex(0x339), 54, 2, 1f, 0f, sna = 0f)
 
-        insertCANSignal(SName.driverUnbuckled, Constants.vehicleBus, Hex(0x3A1), 32, 2, 1f, 0f, 1, 0, sna=2f)
-        insertCANSignal(SName.passengerUnbuckled, Constants.vehicleBus, Hex(0x3A1), 34, 2, 1f, 0f, 1, 0, sna=2f)
-        insertCANSignal(SName.frontOccupancy, Constants.vehicleBus, Hex(0x3C2), 50, 2, 1f, 0f, 1, 0, sna=0f)
-        insertCANSignal(SName.heatBattery, Constants.vehicleBus, Hex(0x2E1), 63, 1, 1f, 0f, 3, 0 )
+        insertCANSignal(
+            SName.driverUnbuckled,
+            Constants.vehicleBus,
+            Hex(0x3A1),
+            32,
+            2,
+            1f,
+            0f,
+            1,
+            0,
+            sna = 2f
+        )
+        insertCANSignal(
+            SName.passengerUnbuckled,
+            Constants.vehicleBus,
+            Hex(0x3A1),
+            34,
+            2,
+            1f,
+            0f,
+            1,
+            0,
+            sna = 2f
+        )
+        insertCANSignal(
+            SName.frontOccupancy,
+            Constants.vehicleBus,
+            Hex(0x3C2),
+            50,
+            2,
+            1f,
+            0f,
+            1,
+            0,
+            sna = 0f
+        )
+        insertCANSignal(SName.heatBattery, Constants.vehicleBus, Hex(0x2E1), 63, 1, 1f, 0f, 3, 0)
 
         // EPBR_telltaleLocal: 0 "LAMP_OFF" 1 "LAMP_RED_ON" 2 "LAMP_AMBER_ON" 3 "LAMP_RED_FLASH" 7 "SNA"
-        insertCANSignal(SName.brakePark, Constants.vehicleBus, Hex(0x228), 39, 3, 1f, 0f, sna=7f)
+        insertCANSignal(SName.brakePark, Constants.vehicleBus, Hex(0x228), 39, 3, 1f, 0f, sna = 7f)
 
         insertCANSignal(SName.brakeHold, Constants.vehicleBus, Hex(0x2B6), 10, 1, 1f, 0f)
         // TPMS changed in 2022.36, dbc still shows them at this address but they don't work
         // insertCANSignal(SName.tpmsSoft, Constants.vehicleBus, Hex(0x123), 13, 1, 1f, 0f)
         // insertCANSignal(SName.tpmsHard, Constants.vehicleBus, Hex(0x123), 12, 1, 1f, 0f)
 
-        insertCANSignal(SName.odometer, Constants.vehicleBus, Hex(0x3B6), 0, 32, 0.001f, 0f, sna=4294967.295f)
+        insertCANSignal(
+            SName.odometer,
+            Constants.vehicleBus,
+            Hex(0x3B6),
+            0,
+            32,
+            0.001f,
+            0f,
+            sna = 4294967.295f
+        )
         insertCANSignal(SName.PINenabled, Constants.vehicleBus, Hex(0x3B3), 6, 1, 1f, 0f)
         insertCANSignal(SName.PINpassed, Constants.vehicleBus, Hex(0x3B3), 7, 1, 1f, 0f)
         insertCANSignal(SName.brakeApplied, Constants.chassisBus, Hex(0x39D), 16, 2, 1f, 0f)
 
         insertCANSignal(SName.limRegen, Constants.vehicleBus, Hex(0x36E), 8, 1, 1f, 0f)
-        insertCANSignal(SName.kwhDischargeTotal, Constants.vehicleBus, Hex(0x3D2), 0, 32, 0.001f, 0f, sna=4294967.295f)
-        insertCANSignal(SName.kwhChargeTotal, Constants.vehicleBus, Hex(0x3D2), 32, 32, 0.001f, 0f, sna=4294967.295f)
+        insertCANSignal(
+            SName.kwhDischargeTotal,
+            Constants.vehicleBus,
+            Hex(0x3D2),
+            0,
+            32,
+            0.001f,
+            0f,
+            sna = 4294967.295f
+        )
+        insertCANSignal(
+            SName.kwhChargeTotal,
+            Constants.vehicleBus,
+            Hex(0x3D2),
+            32,
+            32,
+            0.001f,
+            0f,
+            sna = 4294967.295f
+        )
 
-        insertCANSignal(SName.canServerPandaConnection, Constants.canServerBus, Hex(0x503), 0, 1, 1f, 0f)
-        insertCANSignal(SName.canServerLoggingStatus, Constants.canServerBus, Hex(0x502), 0, 3, 1f, -1f)
+        insertCANSignal(
+            SName.canServerPandaConnection,
+            Constants.canServerBus,
+            Hex(0x503),
+            0,
+            1,
+            1f,
+            0f
+        )
+        insertCANSignal(
+            SName.canServerLoggingStatus,
+            Constants.canServerBus,
+            Hex(0x502),
+            0,
+            3,
+            1f,
+            -1f
+        )
         insertCANSignal(SName.customTest, Constants.anyBus, Hex(0x50A), 0, 8, 1f, 0f)
 
-        insertCANSignal(SName.airTempKelv, Constants.anyBus, Hex(0x50A), 0, 16, 1f, 0f, signed = true)
-        insertCANSignal(SName.airSpeedMph, Constants.anyBus, Hex(0x50A), 16, 16, 1f, 0f, signed = true)
-        insertCANSignal(SName.airPressure, Constants.anyBus, Hex(0x50A), 32, 16, 1f, 0f, signed = true)
+        insertCANSignal(
+            SName.airTempKelv,
+            Constants.anyBus,
+            Hex(0x50A),
+            0,
+            16,
+            1f,
+            0f,
+            signed = true
+        )
+        insertCANSignal(
+            SName.airSpeedMphRaw,
+            Constants.anyBus,
+            Hex(0x50A),
+            16,
+            16,
+            1f,
+            0f,
+            signed = true
+        )
+        insertCANSignal(
+            SName.airPressure,
+            Constants.anyBus,
+            Hex(0x50A),
+            32,
+            16,
+            1f,
+            0f,
+            signed = true
+        )
 
-
+        insertAugmentedCANSignal(SName.airSpeedMph, listOf(SName.airPressure)) {
+            val airPressure = it[SName.airPressure]
+            if (airPressure != null) {
+                return@insertAugmentedCANSignal sqrt(airPressure * 42.0).toFloat()
+            }
+            return@insertAugmentedCANSignal null
+        }
 
         // Create augmented signals
         insertAugmentedCANSignal(SName.smoothBattAmps, listOf(SName.battAmps)) {
@@ -296,7 +674,10 @@ class CANSignalHelper(val sharedPreferences: SharedPreferences) {
             }
             return@insertAugmentedCANSignal accActive
         }
-        insertAugmentedCANSignal(SName.partyHoursLeft, listOf(SName.slowPower, SName.stateOfCharge, SName.nominalFullPackEnergy)) {
+        insertAugmentedCANSignal(
+            SName.partyHoursLeft,
+            listOf(SName.slowPower, SName.stateOfCharge, SName.nominalFullPackEnergy)
+        ) {
             val socTarget = sharedPreferences.getPref(Constants.partyTimeTarget)
             val power = it[SName.slowPower]
             val soc = it[SName.stateOfCharge]
@@ -328,7 +709,7 @@ class CANSignalHelper(val sharedPreferences: SharedPreferences) {
     private fun addToMapList(bus: Int, frameId: Hex, value: CANSignal) {
         if (!busToFrameToSignal.containsKey(bus)) {
             busToFrameToSignal[bus] = mutableMapOf(Pair(frameId, mutableListOf(value)))
-        }else if (busToFrameToSignal[bus]?.containsKey(frameId) == false) {
+        } else if (busToFrameToSignal[bus]?.containsKey(frameId) == false) {
             busToFrameToSignal[bus]?.set(frameId, mutableListOf(value))
         } else {
             busToFrameToSignal[bus]?.get(frameId)?.add(value)

@@ -108,6 +108,8 @@ object SName {
     // Custom logging signals:
     const val customTest: SignalName = "CustomTest"
     const val airSpeedMph: SignalName = "AirspeedMph"
+    // As the Arduino tunes it, which may be wrong.
+    const val airSpeedMphRaw: SignalName = "AirspeedMphRaw"
     const val airPressure: SignalName = "AirPressure"
     const val airTempKelv: SignalName = "AirTempKelv"
 }
